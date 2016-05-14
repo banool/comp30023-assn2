@@ -41,12 +41,31 @@ int create_game(int sock_id, Threads *threads) {
 
 void *work_function(int sock_id)
 {
-    char msg[25];
+
+    char correct[4] = "ABCD";
+    char outgoing[30];
+
+    int b = 0;
+    int m = 0;
+
+    // No need for +1 because we know input length therefore no sentinel.
+    char msg[CODE_LENGTH]; 
     
     // todo dont forget about this len thing.
-    while (recv(sock_id,&msg,sizeof(msg),0))
+    while (recv(sock_id,&msg,CODE_LENGTH,0))
     {
-        printf("%s",msg);
+        printf("%d: %s message size: %d\n", sock_id, msg, sizeof(msg));
+
+        if (cmp_codes(msg, correct, &b, &m) < 0) {
+            strncpy(outgoing, "Invalid guess, try again.", 7);
+            outgoing[8] = '\0';
+        } else {
+            snprintf(outgoing, sizeof(outgoing), "[%d,%d]", b, m);
+        }
+        printf("outgoing: %s\n", outgoing);
+        send(sock_id, outgoing, 8, 0);
+        b = 0;
+        m = 0;
     }
     close (sock_id);
 }
@@ -62,16 +81,18 @@ int cmp_codes(char *guess, char *correct, int *b, int *m)
     int i;
     int j;
 
+    printf("A: %d, F: %d\n", 'A', 'F');
+
     // This array represents letters that could be correct, but in the wrong
     // spot. We take away correctly positioned letters on the first pass,
     // leaving behind letters that might be present but in the wrong position.
     char leftover_letters[CODE_LENGTH];
     strncpy(leftover_letters, correct, CODE_LENGTH);
-
     // First pass checking for chars in correct position.
     for (i = 0; i < CODE_LENGTH; i++) {
         // Chcecking that the characters are in the acceptable range.
         // TODO are these magic numbers???
+        printf("char: %d\n", guess[i]);
         if (guess[i] < 'A' || guess[i] > 'F') {
             *b = 0;
             return -1;

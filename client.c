@@ -6,11 +6,14 @@
 #include <netinet/in.h>
 #include <netdb.h>
 
+#define CODE_LENGTH 4
+#define RECEIVE_LENGTH 30
 
 int main(int argc, char * argv[])
 {
 
-	char msgtobesent[25];
+	char msgtobesent[CODE_LENGTH];
+	char receive[RECEIVE_LENGTH];
 
 	struct hostent *hp;
 	struct sockaddr_in sin;
@@ -54,11 +57,16 @@ int main(int argc, char * argv[])
 		close(s);
 		exit(1);
 	}
-	while(fgets(msgtobesent,sizeof(msgtobesent),stdin))
+	while(scanf("%4s", msgtobesent))
 	{
-		msgtobesent[24]='\0';
-		len=strlen(msgtobesent)+1;
-		send(s,msgtobesent,len,0);
+		printf("message to be sent: %s\n", msgtobesent);
+		send(s, msgtobesent, CODE_LENGTH, 0);
+		//fflush(stdin);
+		recv(s,&receive,RECEIVE_LENGTH,0);
+
+		printf("%s\n", receive);
+
+
 	}
 	close(s);
 }

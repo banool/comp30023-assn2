@@ -4,14 +4,10 @@
 ** The actual game?
 */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
+#include "game.h"
 
-#define CODE_LENGTH 4
 
-int cmp_codes(char *guess, char *correct, int *b, int *m);
-
+/*
 int main(int argc, char *argv[])
 {
     char hard1[4] = "ABCC"; // guess
@@ -23,7 +19,36 @@ int main(int argc, char *argv[])
     printf("%d\n", cmp_codes(hard1, hard2, &b, &m));
     printf("b: %d // m: %d\n", b, m);
 
+    Threads *threads = create_threads_struct(MAX_PLAYERS);
+
     return 0;
+}*/
+
+
+/* 
+** Returns id for the thread maybe?
+*/
+int create_game(int sock_id, Threads *threads) {
+    
+    int next_index = get_next_index(threads);
+    if (next_index < 0) {
+        return -1; // blah do more errno or something?
+    }
+    pthread_create(&threads->t[next_index], NULL, 
+        work_function, sock_id);
+
+}
+
+void *work_function(int sock_id)
+{
+    char msg[25];
+    
+    // todo dont forget about this len thing.
+    while (recv(sock_id,&msg,sizeof(msg),0))
+    {
+        printf("%s",msg);
+    }
+    close (sock_id);
 }
 
 /*

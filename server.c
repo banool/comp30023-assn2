@@ -1,3 +1,5 @@
+// This is the server-2 code from Sockets/TCP2/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
@@ -7,6 +9,8 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include "game.h"
+//#include "threads.h"
 
 int main (int argc, char *argv[])
 {
@@ -28,13 +32,16 @@ int main (int argc, char *argv[])
 	}
 	printf("Server port %i\n",server_port);
 	/* Building data structures for sockets */
-	/* Identify two end points; one for the server and the other for the client when it connects to the server socket */
-	memset (&server,0, sizeof (server));
-	memset (&client,0, sizeof (client));
+	/* Identify two end points; one for the server and the other for the client 
+	when it connects to the server socket */
+	memset (&server, 0, sizeof (server));
+	memset (&client, 0, sizeof (client));
 	/* Server socket initializations */
 	/* AF_INET: specifies the connection to Internet. In our example we use 
-	TCP port 5431 as the known server port; Any client need to connect to this port;
-	INADDR_ANY specifies the server is willing to accept connections on any of the local host's IP addresses. */ 
+	TCP port 5431 as the known server port; Any client need to connect to this 
+	port;
+	INADDR_ANY specifies the server is willing to accept connections on any 
+	of the local host's IP addresses. */ 
 
 	server.sin_family = AF_INET;
 	server.sin_addr.s_addr = INADDR_ANY;
@@ -75,7 +82,11 @@ int main (int argc, char *argv[])
 	/* Wait for connection then receive and print text */
 
 	/* set an alarm to terminate after 1 minutes */
-	alarm(60);
+	//diag
+	//todo remove
+	//alarm(60);
+
+	Threads *threads = create_threads_struct(MAX_PLAYERS);
 
 	count = 0;
 	while (1)
@@ -94,16 +105,8 @@ int main (int argc, char *argv[])
 			char ip4[INET_ADDRSTRLEN];
 			inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
 			printf("connection accepted from client %s\n",ip4);
+			create_game(new_s, threads);
 		}
-		while (len=recv(new_s,&msg,sizeof(msg),0))
-		{ 
-
-
-			printf("%s",msg);
-			
-
-		}
-		close (new_s);
 	}
 	close(s);
 

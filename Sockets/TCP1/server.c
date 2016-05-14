@@ -12,11 +12,15 @@ The port number is passed as an argument
 #include <sys/types.h> 
 #include <sys/socket.h>
 #include <netinet/in.h>
-
+#include <unistd.h>
 
 int main(int argc, char **argv)
 {
-	int sockfd, newsockfd, portno, clilen;
+	// This fixes the warning here: 
+	// https://stackoverflow.com/questions/13241519/sockets-in-c-errors
+	socklen_t clilen;
+
+	int sockfd, newsockfd, portno;
 	char buffer[256];
 	struct sockaddr_in serv_addr, cli_addr;
 	int n;

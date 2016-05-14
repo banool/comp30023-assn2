@@ -5,8 +5,9 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
-extern int errno;
 int main (int argc, char *argv[])
 {
 
@@ -14,7 +15,7 @@ int main (int argc, char *argv[])
 
 	struct sockaddr_in server, client;
 	char *host;
-	int len;
+	socklen_t len;
 	int s, new_s, count,server_port;
 
 

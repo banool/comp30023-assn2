@@ -2,12 +2,12 @@
 # Makefile
 # 2016
 
-serverOBJ     	= server.o game.o threads.o
+serverOBJ     	= server.o game.o threads.o logging.o
 clientOBJ		= client.o
 serverEXE    	= server
 clientEXE		= client
 CC      		= gcc
-CFLAGS  		= -Wall -pthread
+CFLAGS  		= -pthread
 # -O2 -m32
 
 default: server client
@@ -24,3 +24,4 @@ clean:
 server.o: game.h threads.h Makefile
 game.o: game.h threads.h
 threads.o: threads.h
+logging.o: logging.h

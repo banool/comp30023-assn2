@@ -31,16 +31,27 @@ int main(int argc, char *argv[])
 int create_game(int sock_id, Threads *threads) {
     
     int next_index = get_next_index(threads);
+
     if (next_index < 0) {
+        send(sock_id, "Sorry, max players reached.", 28, 0);
+        close(sock_id);
         return -1; // blah do more errno or something?
     }
+
+    // Make it return 1 if this fails.
+    // Back in server, make a line like
+    // while(create_game())
+    // which will try to keep making it until it succeeds.
     pthread_create(&threads->t[next_index], NULL, 
         work_function, sock_id);
+    return 0;
 
 }
 
 void *work_function(int sock_id)
 {
+
+    send_welcome(sock_id);
 
     char correct[4] = "ABCD";
     char outgoing[30];
@@ -70,11 +81,26 @@ void *work_function(int sock_id)
     close (sock_id);
 }
 
+void send_welcome(int sock_id) {
+    char welcome[320];
+    strcat(welcome, "Welcome to Mastermind!\n\n");
+    // Prints last line with two newlines, one here and one from the client.
+    strcat(welcome, "How to play:\n");
+    strcat(welcome, "============\n");
+    strcat(welcome, "Enter your guess of 4 characters from A to F. Eg. ABBD\n");
+    strcat(welcome, "The server will return  in this format: [b,m]\n");
+    strcat(welcome, "    b - Num. correct letters in correct position.\n");
+    strcat(welcome, "    m - Num. correct letters in wrong position.\n");
+    strcat(welcome, "You get 10 guesses. Good luck!\n");
+
+    send(sock_id, welcome, 320, 0);
+}
+
 /*
 ** b: num of correct colours in the correct positions
 ** m: num of colours that are part of the code but not in the correct positions
 ** 
-** Returns -1 if any of the letters are out of the accepted range. 0 otherwise.ls
+** Returns -1 if any of the letters are out of the accepted range. 0 otherwise.
 */
 int cmp_codes(char *guess, char *correct, int *b, int *m)
 {

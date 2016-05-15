@@ -10,6 +10,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include "game.h"
+#include "logging.h"
 //#include "threads.h"
 
 int main (int argc, char *argv[])
@@ -69,6 +70,7 @@ int main (int argc, char *argv[])
 
 	/* Sets the maximum number of pending connections to be allowed, in our case this number is 10 */
 
+    // TODO magic number care
 	if ( listen (s, 5) < 0)
 	{
         perror("listen() failed with error");
@@ -88,10 +90,7 @@ int main (int argc, char *argv[])
 
 	Threads *threads = create_threads_struct(MAX_PLAYERS);
 
-	count = 0;
-	while (1)
-	{
-		++count;
+	while (1) {
 		len=sizeof(client);
 
 		if ((new_s = accept (s, (struct sockaddr *) &client, &len)) < 0)
@@ -102,10 +101,11 @@ int main (int argc, char *argv[])
 		}
 		else
 		{
-			char ip4[INET_ADDRSTRLEN];
-			inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
-			printf("connection accepted from client %s\n",ip4);
-			create_game(new_s, threads);
+    		char ip4[INET_ADDRSTRLEN];
+    		inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
+            printf("connection accepted from client %s\n",ip4);
+    		create_game(new_s, threads);
+
 		}
 	}
 	close(s);

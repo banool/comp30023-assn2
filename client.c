@@ -8,6 +8,9 @@
 
 #define CODE_LENGTH 4
 #define RECEIVE_LENGTH 30
+#define WELCOME_LENGTH 320
+
+void print_guess_q();
 
 int main(int argc, char * argv[])
 {
@@ -57,17 +60,25 @@ int main(int argc, char * argv[])
 		close(s);
 		exit(1);
 	}
+
+	// Getting welcome message
+	recv(s, &receive, WELCOME_LENGTH, 0);
+	printf("%s\n", receive);
+
+	print_guess_q();
 	while(scanf("%4s", msgtobesent))
 	{
-		printf("message to be sent: %s\n", msgtobesent);
 		send(s, msgtobesent, CODE_LENGTH, 0);
 		//fflush(stdin);
 		recv(s,&receive,RECEIVE_LENGTH,0);
 
 		printf("%s\n", receive);
 
-
+		print_guess_q();
 	}
 	close(s);
 }
 
+void print_guess_q() {
+	printf("Enter guess: ");
+}

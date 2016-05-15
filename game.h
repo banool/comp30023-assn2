@@ -16,3 +16,4 @@ int create_game(int sock_id, char *ip4, Instances *instances);
 void *run_instance(Instance *instance);
 void send_welcome(int sock_id);
 char *get_random_code();
+static inline unsigned get_random_letter();

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/types.h>
-#include <sys/socket.h>
+//#include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
@@ -17,6 +17,8 @@ int main (int argc, char *argv[])
 {
 
 	char msg[25];
+    char log_buf[LOG_MSG_LEN];
+    memset(log_buf, '\0', LOG_MSG_LEN);
 
 	struct sockaddr_in server, client;
 	char *host;
@@ -55,7 +57,7 @@ int main (int argc, char *argv[])
       perror ("Error creating socket");
       exit (1);
 	}
-	printf("Socket descriptor:  %ld\n", s);
+	printf("Socket descriptor:  %d\n", s);
 
 	/* Bind the socket to local address */
 
@@ -88,7 +90,7 @@ int main (int argc, char *argv[])
 	//todo remove
 	//alarm(60);
 
-	Threads *threads = create_threads_struct(MAX_PLAYERS);
+	Instances *instances = create_instances_struct(MAX_PLAYERS);
 
 	while (1) {
 		len=sizeof(client);
@@ -103,9 +105,14 @@ int main (int argc, char *argv[])
 		{
     		char ip4[INET_ADDRSTRLEN];
     		inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
-            printf("connection accepted from client %s\n",ip4);
-    		create_game(new_s, threads);
 
+    		if (create_game(new_s, ip4, instances) < 0){
+                sprintf(log_buf, "Max players (%d) reached. Connection rejected from %s\n", MAX_PLAYERS, ip4);
+                write_log(log_buf);
+            } else {
+                sprintf(log_buf, "(%s)(%d) Client connected.\n", ip4, new_s);
+                write_log(log_buf);
+            }
 		}
 	}
 	close(s);

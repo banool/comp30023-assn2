@@ -5,9 +5,10 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
+#include <string.h>
 
 #define CODE_LENGTH 4
-#define RECEIVE_LENGTH 30
+#define RECEIVE_LENGTH 32
 #define WELCOME_LENGTH 320
 
 void print_guess_q();
@@ -16,6 +17,7 @@ int main(int argc, char * argv[])
 {
 
 	char msgtobesent[CODE_LENGTH];
+	char welcome[WELCOME_LENGTH];
 	char receive[RECEIVE_LENGTH];
 
 	struct hostent *hp;
@@ -62,17 +64,19 @@ int main(int argc, char * argv[])
 	}
 
 	// Getting welcome message
-	recv(s, &receive, WELCOME_LENGTH, 0);
-	printf("%s\n", receive);
+	recv(s, &welcome, WELCOME_LENGTH, 0);
+	printf("%s\n", welcome);
 
 	print_guess_q();
 	while(scanf("%4s", msgtobesent))
 	{
 		send(s, msgtobesent, CODE_LENGTH, 0);
 		//fflush(stdin);
-		recv(s,&receive,RECEIVE_LENGTH,0);
+		recv(s, &receive, RECEIVE_LENGTH, 0);
 
 		printf("%s\n", receive);
+
+		memset(receive, '\0', RECEIVE_LENGTH);
 
 		print_guess_q();
 	}

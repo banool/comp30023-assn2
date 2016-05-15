@@ -15,6 +15,7 @@ int main(int args, char **argv)
 
     pthread_create(&tid[0], NULL, work_function, (void *) iterations);
     pthread_create(&tid[1], NULL, work_function, (void *) iterations);
+    printf("%d and %d\n", (unsigned int)tid[0], (unsigned int)tid[1]);
     
     pthread_join(tid[0], NULL);
     pthread_join(tid[1], NULL);

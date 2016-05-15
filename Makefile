@@ -2,7 +2,7 @@
 # Makefile
 # 2016
 
-serverOBJ     	= server.o game.o threads.o logging.o
+serverOBJ     	= server.o game.o instances.o logging.o
 clientOBJ		= client.o
 serverEXE    	= server
 clientEXE		= client
@@ -21,7 +21,7 @@ client:   $(clientOBJ) Makefile
 clean:
 	rm -f $(clientOBJ) $(clientEXE) $(serverOBJ) $(serverEXE)
 
-server.o: game.h threads.h Makefile
-game.o: game.h threads.h
-threads.o: threads.h
+server.o: game.h instances.h Makefile
+game.o: game.h instances.h
+instances.o: instances.h
 logging.o: logging.h

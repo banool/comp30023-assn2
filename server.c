@@ -107,7 +107,7 @@ int main (int argc, char *argv[])
     		inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
 
     		if (create_game(new_s, ip4, instances) < 0){
-                sprintf(log_buf, "Max players (%d) reached. Connection rejected from %s\n", MAX_PLAYERS, ip4);
+                sprintf(log_buf, "Max players (%d) reached. Connection rejected from %s.\n", MAX_PLAYERS, ip4);
                 write_log(log_buf);
             } else {
                 sprintf(log_buf, "(%s)(%d) Client connected.\n", ip4, new_s);
@@ -120,4 +120,14 @@ int main (int argc, char *argv[])
 	return 1;
 }
 
+/*
+void intHandler(int dummy);
+void intHandler(int dummy) {
+    keep_running = 0;
+}
+	signal(SIGINT, intHandler);
+
+// Global var ok?
+static volatile int keep_running = 1;
+*/
 

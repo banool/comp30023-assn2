@@ -56,7 +56,7 @@ void *run_instance(Instances *insts)
 
     char log_buf[LOG_MSG_LEN];
 
-    sprintf(log_buf, "(0.0.0.0) server secret = %s\n", correct);
+    sprintf(log_buf, "(0.0.0.0) Server secret = \"%s\".\n", correct);
     write_log(log_buf);
 
     // pthread_self() is the same as instance->t
@@ -73,14 +73,23 @@ void *run_instance(Instances *insts)
     // todo dont forget about this len thing.
     while (recv(sock_id, &msg, CODE_LENGTH, 0))
     {
+        // Checking for a DEAD signal from the client (usually caused by
+        // interrupt like SIGINT from ctrl+C).
+        if (msg[0] == DEAD) {
+            break;
+        }
         msg[CODE_LENGTH] = '\0';
         if (game_step(msg, correct, instance) == 0)
             break;
     }
 
+    printf("%c\n", msg[0]);
     remove_instance(insts, instance->t);
-    print_instances(insts);
+    sprintf(log_buf, "(%s)(%d) Disconnected.\n", ip4, sock_id);
+    write_log(log_buf);
+    //print_instances(insts);
 
+    //TODO this could maybe be moved inside remove_instance
     close(sock_id);
 }
 
@@ -101,7 +110,7 @@ int game_step(char *msg, char *correct, Instance *instance) {
 
     if (cmp_codes(msg, correct, &b, &m) == 0) {
         if (b == 4) {
-            sprintf(log_buf, "(%s)(%d) SUCCESS Game Over\n", ip4, sock_id);
+            sprintf(log_buf, "(%s)(%d) SUCCESS Game Over.\n", ip4, sock_id);
             write_log(log_buf);
 
             sprintf(outgoing, "%dSuccess! You won in %d turns.", DEAD, instance->turn);
@@ -111,7 +120,7 @@ int game_step(char *msg, char *correct, Instance *instance) {
             close(sock_id);
             return 0;
         } else if (instance->turn == 10) {
-            sprintf(log_buf, "(%s)(%d) FAILURE Game Over\n", ip4, sock_id);
+            sprintf(log_buf, "(%s)(%d) FAILURE Game Over.\n", ip4, sock_id);
             write_log(log_buf);
             //TODO make all these consistent. so like get rid of strcpy in place of sprintf even if it has no args.
             sprintf(outgoing, "%dSorry, you ran out of turns :(", DEAD);
@@ -121,15 +130,18 @@ int game_step(char *msg, char *correct, Instance *instance) {
             close(sock_id);
             return 0;
         } else {
-            sprintf(log_buf, "(%s)(%d) client guess = %s\n", ip4, sock_id, msg);
+            sprintf(log_buf, "(%s)(%d) Client guess = %s.\n", ip4, sock_id, msg);
             write_log(log_buf);
 
-            sprintf(log_buf, "(0.0.0.0) server hint = [%d,%d]\n", b, m);
+            sprintf(log_buf, "(0.0.0.0) server hint = [%d,%d].\n", b, m);
             sprintf(outgoing, "%d[%d,%d]", ALIVE, b, m);
 
             instance->turn += 1;
         }
     } else {
+        sprintf(log_buf, "(%s)(%d) Client guess invalid.\n", ip4, sock_id);
+        write_log(log_buf);
+
         sprintf(outgoing, "%dInvalid guess, try again.", ALIVE);
     }
 
@@ -218,7 +230,8 @@ int cmp_codes(char *guess, char *correct, int *b, int *m)
             *b = *b + 1;
         }
     }
-    printf("leftovers %s\n", leftover_letters);
+    //diag
+    //printf("leftovers %s\n", leftover_letters);
 
     // Iterate throught leftover_letters, the letters that weren't
     // guessed in the correct position but could still be present.

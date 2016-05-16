@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <netdb.h>
 #include <string.h>
+#include <signal.h>
 
 #define CODE_LENGTH 4
 #define RECEIVE_LENGTH 32
@@ -57,7 +58,7 @@ int main(int argc, char * argv[])
 		exit(1);
 	}
 
-	if(connect(s, (struct sockaddr *)&sin, sizeof(sin))  < 0  )
+	if (connect(s, (struct sockaddr *)&sin, sizeof(sin))  < 0  )
 	{
 		perror("Error in connecting to the host");
 		close(s);
@@ -72,7 +73,7 @@ int main(int argc, char * argv[])
 	}
 
 	print_guess_q();
-	while(scanf("%4s", msgtobesent))
+	while (scanf("%4s", msgtobesent))
 	{
 		send(s, msgtobesent, CODE_LENGTH, 0);
 		//fflush(stdin);
@@ -87,9 +88,17 @@ int main(int argc, char * argv[])
 
 		print_guess_q();
 	}
+	printf("blah!!!\n");
+	send(s, (char*)DEAD, 1, 0);
 	close(s);
 }
 
 void print_guess_q() {
 	printf("Enter guess: ");
 }
+
+/*
+in terms of not letting either end hang when the other end unexpectedly disconnects, don't you just have an interrupt for ctrl+c that sends something to the other side like "DEAD" or something
+still do we need to handle when one side just dies without that, like the server computer loses power or something
+who knows
+*/

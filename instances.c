@@ -21,7 +21,6 @@ Instances *create_instances_struct(int max_size)
         insts->i[x] = NULL;
     }
 
-    insts->start = 0;
     insts->num_items = 0;
     insts->max_size = max_size;
     return insts;
@@ -73,7 +72,8 @@ Instance *new_instance(Instances *insts, int sock_id, char *ip4, pthread_t threa
 
 // Removes an instance by finding its thread number.
 // Should be ok because thread numbers are unique.
-void remove_instance(Instances *insts, pthread_t thread_id) {
+void remove_instance(Instances *insts, pthread_t thread_id)
+{
     for (int x = 0; x < insts->max_size; x++) {
         if (insts->i[x] != NULL) {
             if (insts->i[x]->t == thread_id) {
@@ -89,6 +89,17 @@ void print_instances(Instances *insts) {
     for (int x = 0; x < insts->max_size; x++) {
         if (insts->i[x] != NULL) {
             printf("index: %d: thread_id: %d sock_id: %d ip4: %s\n", x, insts->i[x]->t, insts->i[x]->s, insts->i[x]->ip4);
+        }
+    }
+}
+
+Instance *get_instance(Instances *insts, pthread_t thread_id)
+{
+    for (int x = 0; x < insts->max_size; x++) {
+        if (insts->i[x] != NULL) {
+            if (insts->i[x]->t == thread_id) {
+                return insts->i[x];
+            }
         }
     }
 }

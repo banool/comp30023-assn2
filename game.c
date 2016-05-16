@@ -9,10 +9,10 @@
 /* 
 ** Returns id for the thread maybe?
 */
-int create_game(int sock_id, char *ip4, Instances *instances) {
+int create_game(int sock_id, char *ip4, Instances *insts) {
 
     // The thread ID will be set by pthread_create later.
-    Instance *new_game = new_instance(instances, sock_id, ip4, (pthread_t)-1);
+    Instance *new_game = new_instance(insts, sock_id, ip4, (pthread_t)-1);
     //print_instances(instances);
 
     if (new_game == NULL) {
@@ -27,21 +27,26 @@ int create_game(int sock_id, char *ip4, Instances *instances) {
     // Back in server, make a line like
     // while(create_game())
     // which will try to keep making it until it succeeds.
-    pthread_create(&new_game->t, NULL, run_instance, new_game);
+    pthread_create(&new_game->t, NULL, run_instance, insts);
     // Care. The thread number that pthread_join is waiting for is not
     // the number that is assigned in pthread_create. In run_instance
     // the real thread number is assigned and this is the one that is used
     // for the pthread_join and the remove_instance.
     //pthread_join(new_game->t, NULL);
-    //remove_instance(instances, new_game->t);
-    //print_instances(instances);
     //printf("removing %d\n", new_game->t);
 
     return 0;
 }
 
-void *run_instance(Instance *instance)
+void *run_instance(Instances *insts)
 {
+
+    // Because we can only pass one thing into this function, we pass the
+    // thing with the most useful infp, the Instances struct. We then find 
+    // again the target Instance by using the thread_id, which we can find
+    // out using pthread_self() passed to get_instance
+    Instance *instance = get_instance(insts, pthread_self());
+
     //instance->t = pthread_self();
 
     int sock_id = instance->s;
@@ -72,7 +77,10 @@ void *run_instance(Instance *instance)
         if (game_step(msg, correct, instance) == 0)
             break;
     }
-    // TODO do we ever get here?
+
+    remove_instance(insts, instance->t);
+    print_instances(insts);
+
     close(sock_id);
 }
 

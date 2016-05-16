@@ -15,7 +15,7 @@
 
 int cmp_codes(char *guess, char *correct, int *b, int *m);
 int create_game(int sock_id, char *ip4, Instances *instances);
-void *run_instance(Instance *instance);
+void *run_instance(Instances *insts);
 int game_step(char *msg, char *correct, Instance *instance);
 void send_welcome(int sock_id);
 char *get_random_code();

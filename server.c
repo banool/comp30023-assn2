@@ -18,8 +18,16 @@
 void sigint_handler(int dummy);
 void end_execution(Instances *insts);
 
+pthread_mutex_t lock;
+
 int main (int argc, char *argv[])
 {
+	if (pthread_mutex_init(&lock, NULL) != 0)
+    {
+        printf("\n mutex init failed\n");
+        exit(1);
+    }
+
 	// TODO explain
 	signal(SIGINT, sigint_handler);
 

@@ -1,5 +1,7 @@
 #include "instances.h"
 
+extern pthread_mutex_t lock;
+
 Instances *create_instances_struct(int max_size)
 {
     Instances *insts;
@@ -59,6 +61,8 @@ Instance *new_instance(Instances *insts, int sock_id, char *ip4, pthread_t threa
     i->ip4[strlen(ip4)] = '\0';
     i->turn = 1;
 
+    // Is this locking sufficient? TODO
+    pthread_mutex_lock(&lock);
     // TODO explain this line
     int index = 0;
     while (insts->i[index] != NULL) {
@@ -68,6 +72,7 @@ Instance *new_instance(Instances *insts, int sock_id, char *ip4, pthread_t threa
     insts->i[index] = i;
 
     insts->num_items += 1;
+    pthread_mutex_unlock(&lock);
     return i;
 }
 
@@ -78,9 +83,11 @@ void remove_instance(Instances *insts, pthread_t thread_id)
     for (int x = 0; x < insts->max_size; x++) {
         if (insts->i[x] != NULL) {
             if (insts->i[x]->t == thread_id) {
+                pthread_mutex_lock(&lock);
                 free(insts->i[x]);
                 insts->i[x] = NULL;
                 insts->num_items -= 1;
+                pthread_mutex_unlock(&lock);
             }
         }
     }

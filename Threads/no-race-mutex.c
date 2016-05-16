@@ -23,7 +23,7 @@ int main(int argc, char **argv)
     {
         printf("\n mutex init failed\n");
         exit(1);
-    }	
+    }
 	
     if(pthread_create(&tid1, NULL, runner, NULL))
     {

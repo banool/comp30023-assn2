@@ -63,7 +63,7 @@ Instance *new_instance(Instances *insts, int sock_id, char *ip4, pthread_t threa
 
     // Is this locking sufficient? TODO
     pthread_mutex_lock(&lock);
-    // TODO explain this line
+    // TODO explain this block
     int index = 0;
     while (insts->i[index] != NULL) {
         index++;

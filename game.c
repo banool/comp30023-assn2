@@ -15,10 +15,10 @@ int create_game(int sock_id, char *ip4, char *correct, Instances *insts) {
     Instance *new_game = new_instance(insts, sock_id, ip4, (pthread_t)-1);
 
     if (correct == NULL) {
-        correct = get_random_code();
+        new_game->code = get_random_code();
+    } else {
+        new_game->code = correct;
     }
-
-    new_game->code = correct;
 
     if (new_game == NULL) {
         // Error message currently hardcoded prepended with 0.
@@ -45,15 +45,14 @@ int create_game(int sock_id, char *ip4, char *correct, Instances *insts) {
 
 void *run_instance(Instances *insts)
 {
-
-    // Because we can only pass one thing into this function, we pass the
-    // thing with the most useful infp, the Instances struct. We then find 
-    // again the target Instance by using the thread_id, which we can find
-    // out using pthread_self() passed to get_instance
+    /*
+    ** Because we can only pass one thing into this function, we pass the
+    ** thing with the greatest amount of useful info, the Instances struct. 
+    ** We then find  again the target Instance by using the thread_id, 
+    ** which we can find out using pthread_self() passed to get_instance().
+    */
     Instance *instance = get_instance(insts, pthread_self());
     char *correct = instance->code;
-
-    //instance->t = pthread_self();
 
     int sock_id = instance->s;
     char *ip4 = instance->ip4;
@@ -62,11 +61,6 @@ void *run_instance(Instances *insts)
 
     sprintf(log_buf, "(0.0.0.0) Server secret = \"%s\".\n", correct);
     write_log(log_buf);
-
-    // pthread_self() is the same as instance->t
-
-    // TODO this thread number doesnt seem right for some reason?
-    // printf("sock id = %d and thread id = %d\n", sock_id, instance->t);
 
     send_welcome(sock_id);
 
@@ -173,16 +167,15 @@ void send_welcome(int sock_id)
 char *get_random_code()
 {
     char *code;
-    char randomletter;
 
-    code = malloc(sizeof(char) * CODE_LENGTH);
+    code = malloc(sizeof(char) * CODE_LENGTH + 1);
 
     srand(time(NULL));
     for (int i=0; i < CODE_LENGTH; i++) {
-        randomletter = 'A' + (rand() % 4);
-        code[i] = randomletter;
+        code[i] = 'A' + (rand() % 4);
     }
 
+    code[CODE_LENGTH] = '\0';
     return code;
 
 }

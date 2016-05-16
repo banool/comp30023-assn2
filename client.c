@@ -1,6 +1,7 @@
 // This is the client-2 code from Sockets/TCP2/
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -65,8 +66,12 @@ int main(int argc, char * argv[])
 		exit(1);
 	}
 
+	int recv_len;
+	char c;
+
 	// Getting welcome message
-	recv(s, &welcome, WELCOME_LENGTH, 0);
+	recv_len = recv(s, &welcome, WELCOME_LENGTH, 0);
+	welcome[recv_len] = '\0';
 	printf("%s\n", welcome+1);
 	if (welcome[0] == DEAD) {
 		return 1;
@@ -76,19 +81,23 @@ int main(int argc, char * argv[])
 	while (scanf("%4s", msgtobesent))
 	{
 		send(s, msgtobesent, CODE_LENGTH, 0);
-		//fflush(stdin);
-		recv(s, &receive, RECEIVE_LENGTH, 0);
+		recv_len = recv(s, &receive, RECEIVE_LENGTH, 0);
+		receive[recv_len] = '\0';
 
 		printf("%s\n", receive+1);
 		if (receive[0] == DEAD) {
-			return 1;
+			break;
 		}
 
 		memset(receive, '\0', RECEIVE_LENGTH);
 
+		// While not required as per the spec, this line just
+		// clears the input if the user entered more than 4 chars.
+		while((c = getchar()) != '\n' && c != EOF);
+
 		print_guess_q();
 	}
-	printf("blah!!!\n");
+
 	send(s, (char*)DEAD, 1, 0);
 	close(s);
 }

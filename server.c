@@ -10,11 +10,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <poll.h>
+#include <signal.h>
 #include "game.h"
 #include "logging.h"
 //#include "threads.h"
 
 void sigint_handler(int dummy);
+void end_execution(Instances *insts);
 
 int main (int argc, char *argv[])
 {
@@ -30,12 +32,18 @@ int main (int argc, char *argv[])
 	socklen_t len;
 	int s, new_s, count,server_port;
 
+	char *correct = NULL;
 
-	if (argc==2){
+
+	if (argc == 2) {
 		server_port = atoi(argv[1]);
+	} else
+	if (argc == 3) {
+		server_port = atoi(argv[1]);
+		correct = argv[2];
 	}
 	else {
-		fprintf(stderr, "Usage :server portnumber\n");
+		fprintf(stderr, "Usage: %s portnumber [code]\n", argv[0]);
 		exit(1);
 	}
 	printf("Server port %i\n",server_port);
@@ -95,6 +103,8 @@ int main (int argc, char *argv[])
 	//todo remove
 	//alarm(60);
 
+	int create_ret;
+
 	Instances *instances = create_instances_struct(MAX_PLAYERS);
 
 	struct pollfd poll_list[1];
@@ -119,13 +129,21 @@ int main (int argc, char *argv[])
 	    		char ip4[INET_ADDRSTRLEN];
 	    		inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
 
-	    		if (create_game(new_s, ip4, instances) < 0){
+	    		// Checking to see if a code was passed as an arg.
+	    		if (correct == NULL) {
+	    			create_ret = create_game(new_s, ip4, NULL, instances);
+	    		} else {
+	    			create_ret = create_game(new_s, ip4, correct, instances);
+	    		}
+
+	    		if (create_ret < 0){
 	                sprintf(log_buf, "Max players (%d) reached. Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 	                write_log(log_buf);
 	            } else {
 	                sprintf(log_buf, "(%s)(%d) Client connected.\n", ip4, new_s);
 	                write_log(log_buf);
 	            }
+	            memset(ip4, '\0', INET_ADDRSTRLEN);
 			}
 		} else if (poll_res == 0) {
 			// This check for == 0 is likely unecessary.
@@ -142,18 +160,34 @@ int main (int argc, char *argv[])
 		}
 	}
 
-	sprintf(log_buf, "(0.0.0.0) Server shutting down.\n");
-    write_log(log_buf);
-
+	end_execution(instances);
 	close(s);
 
 	return 1;
 }
 
 void sigint_handler(int dummy) {
-	//signal(SIGINT, SIG_DFL);
-	//raise(SIGINT);
 	// This moves the next printed messaged to the next line, away from ^C
     printf("\n");
 }
 
+void end_execution(Instances *insts) {
+
+    char log_buf[LOG_MSG_LEN];
+    char outgoing[OUTGOING_MSG_LEN];
+    sprintf(outgoing, "%dServer shutting down. Sorry!", DEAD);
+
+	sprintf(log_buf, "(0.0.0.0) Server shutting down.\n");
+    write_log(log_buf);
+
+    for (int x = 0; x < insts->max_size; x++) {
+        if (insts->i[x] != NULL) {
+            send(insts->i[x]->s, outgoing, OUTGOING_MSG_LEN, 0);
+            close(insts->i[x]->s);
+
+            free(insts->i[x]);
+            insts->i[x] = NULL;
+            insts->num_items -= 1;
+        }
+    }
+}

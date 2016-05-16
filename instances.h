@@ -10,6 +10,7 @@ typedef struct Instance_s {
     int s;
     int turn;
     char *ip4;
+    char *code;
 } Instance;
 
 typedef struct Instances_s {

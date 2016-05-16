@@ -56,6 +56,7 @@ Instance *new_instance(Instances *insts, int sock_id, char *ip4, pthread_t threa
     i->t = thread_id;
     i->ip4 = malloc(sizeof(char) * strlen(ip4));
     strncpy(i->ip4, ip4, strlen(ip4));
+    i->ip4[strlen(ip4)] = '\0';
     i->turn = 1;
 
     // TODO explain this line

@@ -63,31 +63,33 @@ void *run_instance(Instance *instance)
         //printf("%d: %s message size: %d\n", sock_id, msg, sizeof(msg));
 
         if (cmp_codes(msg, correct, &b, &m) < 0) {
-            strcpy(outgoing, "Invalid guess, try again.");
+            strcpy(outgoing, "1Invalid guess, try again.");
         } else {
             if (b == 4) {
                 sprintf(log_buf, "(%s)(%d) SUCCESS Game Over\n", ip4, sock_id);
                 write_log(log_buf);
 
-                sprintf(outgoing, "Success! You won in %d turns.", instance->turn);
+                sprintf(outgoing, "0Success! You won in %d turns.", instance->turn);
                 send(sock_id, outgoing, strlen(outgoing), 0);
 
+                //remove_instance(instance); include below line in this function
                 close(sock_id);
                 break;
             } else if (instance->turn == 10) {
                 sprintf(log_buf, "(%s)(%d) FAILURE Game Over\n", ip4, sock_id);
                 write_log(log_buf);
                 //TODO make all these consistent. so like get rid of strcpy in place of sprintf even if it has no args.
-                strcpy(outgoing, "Sorry, you ran out of turns :(");
+                strcpy(outgoing, "0Sorry, you ran out of turns :(");
                 send(sock_id, outgoing, strlen(outgoing), 0);
 
+                //remove_instance(instance); include below line in this function
                 close(sock_id);
                 break;
             } else {
                 sprintf(log_buf, "(%s)(%d) client guess = %s\n", ip4, sock_id, msg);
                 write_log(log_buf);
 
-                sprintf(outgoing, "[%d,%d]", b, m);
+                sprintf(outgoing, "1[%d,%d]", b, m);
 
                 sprintf(log_buf, "(0.0.0.0) server hint = [%d,%d]\n", b, m);
                 write_log(log_buf);
@@ -140,8 +142,9 @@ char *get_random_code()
 // Thanks to the second option provided by the correct answer here:
 // https://goo.gl/g0KFEM
 static inline unsigned get_random_letter() {
-   long l;
-   do { l = random(); } while (l>=(RAND_MAX/CODE_LENGTH)*CODE_LENGTH);
+   int l;
+   srand(time(NULL));
+   do { l = rand(); } while (l>=(RAND_MAX/CODE_LENGTH)*CODE_LENGTH);
    return 'A' + (unsigned)(l % CODE_LENGTH);
 }
 

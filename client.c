@@ -74,7 +74,11 @@ int main(int argc, char * argv[])
 		//fflush(stdin);
 		recv(s, &receive, RECEIVE_LENGTH, 0);
 
-		printf("%s\n", receive);
+		printf("%s\n", receive+1);
+
+		if (receive[0] == '0') {
+			break;
+		}
 
 		memset(receive, '\0', RECEIVE_LENGTH);
 

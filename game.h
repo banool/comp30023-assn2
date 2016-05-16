@@ -10,10 +10,13 @@
 #define MAX_PLAYERS 2
 #define OUTGOING_MSG_LEN 32
 #define WELCOME_LENGTH 320
+#define ALIVE 1
+#define DEAD 0
 
 int cmp_codes(char *guess, char *correct, int *b, int *m);
 int create_game(int sock_id, char *ip4, Instances *instances);
 void *run_instance(Instance *instance);
+int game_step(char *msg, char *correct, Instance *instance);
 void send_welcome(int sock_id);
 char *get_random_code();
 static inline unsigned get_random_letter();

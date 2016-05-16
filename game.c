@@ -12,31 +12,44 @@
 int create_game(int sock_id, char *ip4, Instances *instances) {
 
     // The thread ID will be set by pthread_create later.
-    Instance *new_game = new_instance(instances, sock_id, ip4, -1);
+    Instance *new_game = new_instance(instances, sock_id, ip4, (pthread_t)-1);
+    //print_instances(instances);
 
     if (new_game == NULL) {
-        send(sock_id, "Sorry, max players reached.", 28, 0);
+        // Error message currently hardcoded prepended with 0.
+        // TODO this should be more extensible.
+        send(sock_id, "0Sorry, max players reached.", 28, 0);
         close(sock_id);
         return -1; // blah do more errno or something?
     }
 
-    // Make it return 1 if this fails.
+    // Make it return 1 if this fails maybe.
     // Back in server, make a line like
     // while(create_game())
     // which will try to keep making it until it succeeds.
     pthread_create(&new_game->t, NULL, run_instance, new_game);
+    // Care. The thread number that pthread_join is waiting for is not
+    // the number that is assigned in pthread_create. In run_instance
+    // the real thread number is assigned and this is the one that is used
+    // for the pthread_join and the remove_instance.
     //pthread_join(new_game->t, NULL);
+    //remove_instance(instances, new_game->t);
+    //print_instances(instances);
+    //printf("removing %d\n", new_game->t);
 
     return 0;
 }
 
 void *run_instance(Instance *instance)
 {
+    //instance->t = pthread_self();
+
     int sock_id = instance->s;
     char *ip4 = instance->ip4;
 
-    char log_buf[LOG_MSG_LEN];
     char *correct = get_random_code();
+
+    char log_buf[LOG_MSG_LEN];
 
     sprintf(log_buf, "(0.0.0.0) server secret = %s\n", correct);
     write_log(log_buf);
@@ -48,70 +61,86 @@ void *run_instance(Instance *instance)
 
     send_welcome(sock_id);
 
-    char outgoing[OUTGOING_MSG_LEN];
-
-    int b = 0;
-    int m = 0;
-
     // No need for +1 because we know input length therefore no sentinel.
-    char msg[CODE_LENGTH]; 
+    // TODO revise this position
+    char msg[CODE_LENGTH+1]; 
     
     // todo dont forget about this len thing.
-    while (recv(sock_id,&msg,CODE_LENGTH,0))
+    while (recv(sock_id, &msg, CODE_LENGTH, 0))
     {
-        //diag
-        //printf("%d: %s message size: %d\n", sock_id, msg, sizeof(msg));
-
-        if (cmp_codes(msg, correct, &b, &m) < 0) {
-            strcpy(outgoing, "1Invalid guess, try again.");
-        } else {
-            if (b == 4) {
-                sprintf(log_buf, "(%s)(%d) SUCCESS Game Over\n", ip4, sock_id);
-                write_log(log_buf);
-
-                sprintf(outgoing, "0Success! You won in %d turns.", instance->turn);
-                send(sock_id, outgoing, strlen(outgoing), 0);
-
-                //remove_instance(instance); include below line in this function
-                close(sock_id);
-                break;
-            } else if (instance->turn == 10) {
-                sprintf(log_buf, "(%s)(%d) FAILURE Game Over\n", ip4, sock_id);
-                write_log(log_buf);
-                //TODO make all these consistent. so like get rid of strcpy in place of sprintf even if it has no args.
-                strcpy(outgoing, "0Sorry, you ran out of turns :(");
-                send(sock_id, outgoing, strlen(outgoing), 0);
-
-                //remove_instance(instance); include below line in this function
-                close(sock_id);
-                break;
-            } else {
-                sprintf(log_buf, "(%s)(%d) client guess = %s\n", ip4, sock_id, msg);
-                write_log(log_buf);
-
-                sprintf(outgoing, "1[%d,%d]", b, m);
-
-                sprintf(log_buf, "(0.0.0.0) server hint = [%d,%d]\n", b, m);
-                write_log(log_buf);
-
-                instance->turn += 1;
-            }
-        }
-        send(sock_id, outgoing, strlen(outgoing), 0);
-        b = 0;
-        m = 0;
-
-        memset(outgoing, '\0', OUTGOING_MSG_LEN);
+        msg[CODE_LENGTH] = '\0';
+        if (game_step(msg, correct, instance) == 0)
+            break;
     }
     // TODO do we ever get here?
     close(sock_id);
 }
 
+// Returns 0 when done, otherwise returns 1 to indicate the game isn't done.
+int game_step(char *msg, char *correct, Instance *instance) {
+
+    // Repeating these lines inside game_step saves us passing these 
+    // variables through.
+    int sock_id = instance->s;
+    char *ip4 = instance->ip4;
+    char log_buf[LOG_MSG_LEN];
+
+    // Buffer for output to be returned to client.
+    char outgoing[OUTGOING_MSG_LEN];
+
+    int b = 0;
+    int m = 0;
+
+    if (cmp_codes(msg, correct, &b, &m) == 0) {
+        if (b == 4) {
+            sprintf(log_buf, "(%s)(%d) SUCCESS Game Over\n", ip4, sock_id);
+            write_log(log_buf);
+
+            sprintf(outgoing, "%dSuccess! You won in %d turns.", DEAD, instance->turn);
+            send(sock_id, outgoing, strlen(outgoing), 0);
+
+            //remove_instance(instance); include below line in this function
+            close(sock_id);
+            return 0;
+        } else if (instance->turn == 10) {
+            sprintf(log_buf, "(%s)(%d) FAILURE Game Over\n", ip4, sock_id);
+            write_log(log_buf);
+            //TODO make all these consistent. so like get rid of strcpy in place of sprintf even if it has no args.
+            sprintf(outgoing, "%dSorry, you ran out of turns :(", DEAD);
+            send(sock_id, outgoing, strlen(outgoing), 0);
+
+            //remove_instance(instance); include below line in this function
+            close(sock_id);
+            return 0;
+        } else {
+            sprintf(log_buf, "(%s)(%d) client guess = %s\n", ip4, sock_id, msg);
+            write_log(log_buf);
+
+            sprintf(log_buf, "(0.0.0.0) server hint = [%d,%d]\n", b, m);
+            sprintf(outgoing, "%d[%d,%d]", ALIVE, b, m);
+
+            instance->turn += 1;
+        }
+    } else {
+        sprintf(outgoing, "%dInvalid guess, try again.", ALIVE);
+    }
+
+    write_log(log_buf);
+
+    send(sock_id, outgoing, strlen(outgoing), 0);
+    b = 0;
+    m = 0;
+
+    memset(outgoing, '\0', OUTGOING_MSG_LEN);
+
+    return 1;
+}
+
 void send_welcome(int sock_id)
 {
     char welcome[WELCOME_LENGTH];
+    welcome[0] = ALIVE;
     strcat(welcome, "Welcome to Mastermind!\n\n");
-    // Prints last line with two newlines, one here and one from the client.
     strcat(welcome, "How to play:\n");
     strcat(welcome, "============\n");
     strcat(welcome, "Enter your guess of 4 characters from A to F. Eg. ABBD\n");
@@ -119,6 +148,7 @@ void send_welcome(int sock_id)
     strcat(welcome, "    b - Num. correct letters in correct position.\n");
     strcat(welcome, "    m - Num. correct letters in wrong position.\n");
     strcat(welcome, "You get 10 guesses. Good luck!\n");
+    // Prints last line with two newlines, one here and one from the client.
     strcat(welcome, "\0");
 
     send(sock_id, welcome, WELCOME_LENGTH, 0);

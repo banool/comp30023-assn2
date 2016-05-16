@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <assert.h>
+#include <string.h>
 
 typedef struct Instance_s {
     pthread_t t;
@@ -25,3 +26,5 @@ typedef struct Instances_s {
 
 Instances *create_instances_struct(int max_size);
 Instance *new_instance(Instances *instances, int sock_id, char *ip4, pthread_t thread_id);
+void remove_instance(Instances *insts, pthread_t thread_id);
+void print_instances(Instances *insts);

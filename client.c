@@ -10,6 +10,7 @@
 #define CODE_LENGTH 4
 #define RECEIVE_LENGTH 32
 #define WELCOME_LENGTH 320
+#define DEAD '0'
 
 void print_guess_q();
 
@@ -65,7 +66,10 @@ int main(int argc, char * argv[])
 
 	// Getting welcome message
 	recv(s, &welcome, WELCOME_LENGTH, 0);
-	printf("%s\n", welcome);
+	printf("%s\n", welcome+1);
+	if (welcome[0] == DEAD) {
+		return 1;
+	}
 
 	print_guess_q();
 	while(scanf("%4s", msgtobesent))
@@ -75,9 +79,8 @@ int main(int argc, char * argv[])
 		recv(s, &receive, RECEIVE_LENGTH, 0);
 
 		printf("%s\n", receive+1);
-
-		if (receive[0] == '0') {
-			break;
+		if (receive[0] == DEAD) {
+			return 1;
 		}
 
 		memset(receive, '\0', RECEIVE_LENGTH);

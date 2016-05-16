@@ -71,8 +71,8 @@ int main(int argc, char * argv[])
 
 	// Getting welcome message
 	recv_len = recv(s, &welcome, WELCOME_LENGTH, 0);
-	welcome[recv_len] = '\0';
 	printf("%s\n", welcome+1);
+
 	if (welcome[0] == DEAD) {
 		return 1;
 	}
@@ -82,7 +82,6 @@ int main(int argc, char * argv[])
 	{
 		send(s, msgtobesent, CODE_LENGTH, 0);
 		recv_len = recv(s, &receive, RECEIVE_LENGTH, 0);
-		receive[recv_len] = '\0';
 
 		printf("%s\n", receive+1);
 		if (receive[0] == DEAD) {
@@ -97,8 +96,6 @@ int main(int argc, char * argv[])
 
 		print_guess_q();
 	}
-
-	send(s, (char*)DEAD, 1, 0);
 	close(s);
 }
 

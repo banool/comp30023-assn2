@@ -9,12 +9,17 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <poll.h>
 #include "game.h"
 #include "logging.h"
 //#include "threads.h"
 
+void sigint_handler(int dummy);
+
 int main (int argc, char *argv[])
 {
+	// TODO explain
+	signal(SIGINT, sigint_handler);
 
 	char msg[25];
     char log_buf[LOG_MSG_LEN];
@@ -92,42 +97,63 @@ int main (int argc, char *argv[])
 
 	Instances *instances = create_instances_struct(MAX_PLAYERS);
 
+	struct pollfd poll_list[1];
+	poll_list[0].fd = s;
+	poll_list[0].events = POLLIN|POLLPRI;
+
+	int poll_res;
 	while (1) {
 		len=sizeof(client);
 
-		if ((new_s = accept (s, (struct sockaddr *) &client, &len)) < 0)
-		{
-			printf("errno = %d, count =%d, new_s = %d\n", errno, count, new_s);
-			perror ("Accept failed");
-			exit (1);
-		}
-		else
-		{
-    		char ip4[INET_ADDRSTRLEN];
-    		inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
+		// TODO explain this poll function
+		poll_res = poll(poll_list, 1, 500);
+		if (poll_res > 0) {
+			if ((new_s = accept(s, (struct sockaddr *) &client, &len)) < 0)
+			{
+				printf("errno = %d, new_s = %d\n", errno, new_s);
+				perror ("Accept failed");
+				exit (1);
+			}
+			else
+			{
+	    		char ip4[INET_ADDRSTRLEN];
+	    		inet_ntop(AF_INET,&(client.sin_addr), ip4, INET_ADDRSTRLEN);
 
-    		if (create_game(new_s, ip4, instances) < 0){
-                sprintf(log_buf, "Max players (%d) reached. Connection rejected from %s.\n", MAX_PLAYERS, ip4);
-                write_log(log_buf);
-            } else {
-                sprintf(log_buf, "(%s)(%d) Client connected.\n", ip4, new_s);
-                write_log(log_buf);
-            }
+	    		if (create_game(new_s, ip4, instances) < 0){
+	                sprintf(log_buf, "Max players (%d) reached. Connection from %s rejected.\n", MAX_PLAYERS, ip4);
+	                write_log(log_buf);
+	            } else {
+	                sprintf(log_buf, "(%s)(%d) Client connected.\n", ip4, new_s);
+	                write_log(log_buf);
+	            }
+			}
+		} else if (poll_res == 0) {
+			// This check for == 0 is likely unecessary.
+			continue;	
+		} else {
+			// We watch for SIGILL and not SIGINT because the SIGINT causes
+			// poll to throw a SIGILL (system call interrupted).
+			if (errno == SIGILL) {
+				break;
+			}
+			printf("errno = %d\n", errno);
+			perror ("Polling failed");
+			exit (1);		
 		}
 	}
+
+	sprintf(log_buf, "(0.0.0.0) Server shutting down.\n");
+    write_log(log_buf);
+
 	close(s);
 
 	return 1;
 }
 
-/*
-void intHandler(int dummy);
-void intHandler(int dummy) {
-    keep_running = 0;
+void sigint_handler(int dummy) {
+	//signal(SIGINT, SIG_DFL);
+	//raise(SIGINT);
+	// This moves the next printed messaged to the next line, away from ^C
+    printf("\n");
 }
-	signal(SIGINT, intHandler);
-
-// Global var ok?
-static volatile int keep_running = 1;
-*/
 

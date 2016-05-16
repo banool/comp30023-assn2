@@ -19,4 +19,3 @@ void *run_instance(Instances *insts);
 int game_step(char *msg, char *correct, Instance *instance);
 void send_welcome(int sock_id);
 char *get_random_code();
-static inline unsigned get_random_letter();

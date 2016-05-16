@@ -181,21 +181,14 @@ char *get_random_code()
 
     code = malloc(sizeof(char) * CODE_LENGTH);
 
+    srand(time(NULL));
     for (int i=0; i < CODE_LENGTH; i++) {
-        code[i] = get_random_letter();
+        randomletter = 'A' + (rand() % 4);
+        code[i] = randomletter;
     }
 
     return code;
 
-}
-
-// Thanks to the second option provided by the correct answer here:
-// https://goo.gl/g0KFEM
-static inline unsigned get_random_letter() {
-   int l;
-   srand(time(NULL));
-   do { l = rand(); } while (l>=(RAND_MAX/CODE_LENGTH)*CODE_LENGTH);
-   return 'A' + (unsigned)(l % CODE_LENGTH);
 }
 
 /*

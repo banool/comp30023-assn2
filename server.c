@@ -1,4 +1,6 @@
-// This is the server-2 code from Sockets/TCP2/
+// Daniel Porteous porteousd
+
+// Started with the server-2 code from Sockets/TCP2/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -24,19 +26,6 @@ FILE *f;
 
 int main (int argc, char *argv[])
 {
-	f = fopen("log.txt", "w");
-	if (f == NULL)
-	{
-	    printf("Error opening file!\n");
-	    exit(1);
-	}
-
-	if (pthread_mutex_init(&lock, NULL) != 0)
-    {
-        printf("\n mutex init failed\n");
-        exit(1);
-    }
-
 	// TODO explain
 	signal(SIGINT, sigint_handler);
 
@@ -51,7 +40,6 @@ int main (int argc, char *argv[])
 
 	char *correct = NULL;
 
-
 	if (argc == 2) {
 		server_port = atoi(argv[1]);
 	} else
@@ -60,9 +48,23 @@ int main (int argc, char *argv[])
 		correct = argv[2];
 	}
 	else {
-		fprintf(stderr, "Usage: %s portnumber [code]\n", argv[0]);
+		fprintf(stderr, "Usage: %s [port_number] <code>\n", argv[0]);
 		exit(1);
 	}
+
+	f = fopen("log.txt", "w");
+	if (f == NULL)
+	{
+	    printf("Error opening file!\n");
+	    exit(1);
+	}
+
+	if (pthread_mutex_init(&lock, NULL) != 0)
+    {
+        printf("\n mutex init failed\n");
+        exit(1);
+    }
+
 	printf("Server port %i\n",server_port);
 	/* Building data structures for sockets */
 	/* Identify two end points; one for the server and the other for the client 
@@ -189,6 +191,8 @@ int main (int argc, char *argv[])
 	return 1;
 }
 
+// talk about how this just breaks the while loop in main and returns control 
+// to the block afterwards. TODO
 void sigint_handler(int dummy) {
 	// This moves the next printed messaged to the next line, away from ^C
     printf("\n");

@@ -1,4 +1,6 @@
-// This is the client-2 code from Sockets/TCP2/
+// Daniel Porteous porteousd
+
+// Started with the client-2 code from Sockets/TCP2//
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -28,12 +30,12 @@ int main(int argc, char * argv[])
 	char *host;
 	int len, numberofbytes, s, server_port, counter;
 
-	if(argc==3){
+	if (argc == 3) {
 		host = argv[1];
 		server_port = atoi(argv[2]);
 	}
 	else {
-		fprintf(stderr, "Usage :client host server_port\n");
+		fprintf(stderr, "Usage: %s [host] [port_number]\n", argv[0]);
 		exit(1);
 	}
 

@@ -1,18 +1,16 @@
 // Daniel Porteous porteousd
 
-/*
-** The actual game?
-*/
-
 #include "game.h"
+
+extern int num_wins;
 
 /* 
 ** Returns id for the thread maybe?
 */
-int create_game(int sock_id, char *ip4, char *correct, Instances *insts) {
+int create_game(int sock_id, char *ip4, char *correct, StateInfo *state_info) {
 
     // The thread ID will be set by pthread_create later.
-    Instance *new_game = new_instance(insts, sock_id, ip4, (pthread_t)-1);
+    Instance *new_game = new_instance(state_info, sock_id, ip4, (pthread_t)-1);
 
     if (correct == NULL) {
         new_game->code = get_random_code();
@@ -32,7 +30,7 @@ int create_game(int sock_id, char *ip4, char *correct, Instances *insts) {
     // Back in server, make a line like
     // while(create_game())
     // which will try to keep making it until it succeeds.
-    pthread_create(&new_game->t, NULL, run_instance, insts);
+    pthread_create(&new_game->t, NULL, run_instance, state_info);
     // Care. The thread number that pthread_join is waiting for is not
     // the number that is assigned in pthread_create. In run_instance
     // the real thread number is assigned and this is the one that is used
@@ -43,7 +41,7 @@ int create_game(int sock_id, char *ip4, char *correct, Instances *insts) {
     return 0;
 }
 
-void *run_instance(Instances *insts)
+void *run_instance(void *param)
 {
     /*
     ** Because we can only pass one thing into this function, we pass the
@@ -51,7 +49,8 @@ void *run_instance(Instances *insts)
     ** We then find  again the target Instance by using the thread_id, 
     ** which we can find out using pthread_self() passed to get_instance().
     */
-    Instance *instance = get_instance(insts, pthread_self());
+    StateInfo *state_info = (StateInfo*)param;
+    Instance *instance = get_instance(state_info, pthread_self());
     char *correct = instance->code;
 
     int sock_id = instance->s;
@@ -81,7 +80,7 @@ void *run_instance(Instances *insts)
             break;
     }
 
-    remove_instance(insts, instance->t);
+    remove_instance(state_info, instance->t);
     close(sock_id);
 
     sprintf(log_buf, "(%s)(%d) Client disconnected.\n", ip4, sock_id);
@@ -107,6 +106,8 @@ int game_step(char *msg, char *correct, Instance *instance) {
     if (cmp_codes(msg, correct, &b, &m) == 0) {
         // TODO check if this is correct. (printing [b,m]) before success or failure.
         sprintf(log_buf, "(0.0.0.0) Server hint = [%d,%d].\n", b, m);
+        write_log(log_buf);
+
         sprintf(outgoing, "%d[%d,%d]", ALIVE, b, m);
 
         if (b == 4) {
@@ -116,6 +117,7 @@ int game_step(char *msg, char *correct, Instance *instance) {
             sprintf(outgoing, "%dSuccess! You won in %d turns.", DEAD, instance->turn);
             send(sock_id, outgoing, strlen(outgoing), 0);
 
+            num_wins += 1;
             return 0;
         } else if (instance->turn == 10) {
             sprintf(log_buf, "(%s)(%d) FAILURE Game Over.\n", ip4, sock_id);

@@ -1,1 +1,4 @@
-115.146.86.134:12340
+115.146.86.134 12340
+
+Also accessible here:
+mastermind.danielporteous.xyz

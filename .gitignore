@@ -1,3 +1,5 @@
 *.pem
 *.o
 log.txt
+server
+client

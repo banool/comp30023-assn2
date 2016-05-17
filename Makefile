@@ -7,7 +7,7 @@ clientOBJ		= client.o
 serverEXE    	= server
 clientEXE		= client
 CC      		= gcc
-CFLAGS  		= -pthread
+CFLAGS  		= -pthread -std=gnu99
 # -O2 -m32
 
 default: server client

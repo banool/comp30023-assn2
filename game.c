@@ -105,6 +105,10 @@ int game_step(char *msg, char *correct, Instance *instance) {
     int m = 0;
 
     if (cmp_codes(msg, correct, &b, &m) == 0) {
+        // TODO check if this is correct. (printing [b,m]) before success or failure.
+        sprintf(log_buf, "(0.0.0.0) Server hint = [%d,%d].\n", b, m);
+        sprintf(outgoing, "%d[%d,%d]", ALIVE, b, m);
+
         if (b == 4) {
             sprintf(log_buf, "(%s)(%d) SUCCESS Game Over.\n", ip4, sock_id);
             write_log(log_buf);
@@ -125,13 +129,10 @@ int game_step(char *msg, char *correct, Instance *instance) {
             sprintf(log_buf, "(%s)(%d) Client guess = \"%s\".\n", ip4, sock_id, msg);
             write_log(log_buf);
 
-            sprintf(log_buf, "(0.0.0.0) Server hint = [%d,%d].\n", b, m);
-            sprintf(outgoing, "%d[%d,%d]", ALIVE, b, m);
-
             instance->turn += 1;
         }
     } else {
-        sprintf(log_buf, "(%s)(%d) Client guess invalid.\n", ip4, sock_id);
+        sprintf(log_buf, "(%s)(%d) INVALID Client guess invalid.\n", ip4, sock_id);
         sprintf(outgoing, "%dInvalid guess, try again.", ALIVE);
     }
 

@@ -20,8 +20,17 @@ void end_execution(Instances *insts);
 
 pthread_mutex_t lock;
 
+FILE *f;
+
 int main (int argc, char *argv[])
 {
+	f = fopen("log.txt", "w");
+	if (f == NULL)
+	{
+	    printf("Error opening file!\n");
+	    exit(1);
+	}
+
 	if (pthread_mutex_init(&lock, NULL) != 0)
     {
         printf("\n mutex init failed\n");
@@ -119,6 +128,10 @@ int main (int argc, char *argv[])
 	poll_list[0].fd = s;
 	poll_list[0].events = POLLIN|POLLPRI;
 
+	// talk about how a fork could also have been used to catch the sigint.
+	// This polling solution however gives you a greater degree of fine tuned
+	// control both due to the non-blocking nature and the programmer-defined
+	// interval of checking, which also reduces computation expense.
 	int poll_res;
 	while (1) {
 		len=sizeof(client);
@@ -162,6 +175,7 @@ int main (int argc, char *argv[])
 			if (errno == SIGILL) {
 				break;
 			}
+			//TODO talk what this is (catching other errors).
 			printf("errno = %d\n", errno);
 			perror ("Polling failed");
 			exit (1);		
@@ -170,6 +184,7 @@ int main (int argc, char *argv[])
 
 	end_execution(instances);
 	close(s);
+	fclose(f);
 
 	return 1;
 }
@@ -188,8 +203,13 @@ void end_execution(Instances *insts) {
 	sprintf(log_buf, "(0.0.0.0) Server shutting down.\n");
     write_log(log_buf);
 
+    fprintf(stderr, "Server terminated.\n");
+
     for (int x = 0; x < insts->max_size; x++) {
         if (insts->i[x] != NULL) {
+        	// Kill the threads before sending the shutdown message.
+        	pthread_cancel(insts->i[x]->t);
+
             send(insts->i[x]->s, outgoing, OUTGOING_MSG_LEN, 0);
             close(insts->i[x]->s);
 

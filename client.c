@@ -71,7 +71,7 @@ int main(int argc, char * argv[])
 
 	// Getting welcome message
 	recv_len = recv(s, &welcome, WELCOME_LENGTH, 0);
-	printf("%s\n", welcome+1);
+	printf("%.*s\n", recv_len-1, welcome+1);
 
 	if (welcome[0] == DEAD) {
 		return 1;
@@ -83,7 +83,7 @@ int main(int argc, char * argv[])
 		send(s, msgtobesent, CODE_LENGTH, 0);
 		recv_len = recv(s, &receive, RECEIVE_LENGTH, 0);
 
-		printf("%s\n", receive+1);
+		printf("%.*s\n", recv_len-1, receive+1);
 		if (receive[0] == DEAD) {
 			break;
 		}

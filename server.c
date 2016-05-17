@@ -234,15 +234,8 @@ void end_execution(StateInfo *state_info) {
     sprintf(log_buf, "Num connections: %d.\n", num_connections);
     write_log(log_buf);
 
-    sprintf(log_buf, "Num wins: %d\n", num_wins);
+    sprintf(log_buf, "Num wins: %d.\n", num_wins);
 	write_log(log_buf);
-
-    sprintf(log_buf, "\nPerformance and resource info:\n");
-    write_log(log_buf);
-
-    sprintf(log_buf, "\nNum connections: %d.Num wins: %d\n", num_connections,
-    	num_wins);
-    write_log(log_buf);
 
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);

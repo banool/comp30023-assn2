@@ -127,7 +127,6 @@ int game_step(char *msg, char *correct, Instance *instance) {
             return 0;
         } else {
             sprintf(log_buf, "(%s)(%d) Client guess = \"%s\".\n", ip4, sock_id, msg);
-            write_log(log_buf);
 
             instance->turn += 1;
         }

@@ -8,6 +8,8 @@
 extern int num_wins;
 extern struct rusage usage;
 
+char reject_message[OUTGOING_MSG_LEN] = "0Sorry, max players reached.";
+
 /* 
 ** Returns id for the thread maybe?
 */
@@ -19,7 +21,7 @@ int create_game(int sock_id, char *ip4, char *correct, StateInfo *state_info) {
     if (new_game == NULL) {
         // Error message currently hardcoded prepended with 0.
         // TODO this should be more extensible.
-        send(sock_id, "0Sorry, max players reached.", 28, 0);
+        send(sock_id, reject_message, OUTGOING_MSG_LEN, 0);
         close(sock_id);
         return -1; // blah do more errno or something?
     }

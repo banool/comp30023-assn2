@@ -244,17 +244,19 @@ void end_execution(StateInfo *state_info) {
     sprintf(log_buf, "Performance and resource info:\n");
     write_log(log_buf);
 
+    // Generic info about connections and wins.
     sprintf(log_buf, "Num connections: %d.\n", num_connections);
     write_log(log_buf);
-
     sprintf(log_buf, "Num wins: %d.\n", num_wins);
 	write_log(log_buf);
 
+	// Getting info from proc about the resource usage of the process and 
+	// its child threads.
 	proc_f = fopen(statm_path, "r");
 
-	if (proc_f == NULL) 
+	if (proc_f == NULL)
 	{
-		perror("Error opening file");
+		perror("Error opening proc file.");
 		return;
 	}
 

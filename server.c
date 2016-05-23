@@ -2,6 +2,8 @@
 
 // Started with the server-2 code from Sockets/TCP2/
 
+#define _GNU_SOURCE
+
 #include <arpa/inet.h>
 #include <errno.h>
 #include <poll.h>
@@ -18,12 +20,22 @@
 void sigint_handler(int dummy);
 void end_execution(StateInfo *state_info);
 
+/*
+** Thanks to code from the 3rd answer on StackOverflow here:
+** https://goo.gl/EYFRox
+*/
+typedef struct {
+    unsigned long size, resident, share, text, lib, data, dt;
+} statm_t;
+const char *statm_path = "/proc/self/statm";
+
 // These are used in the other files, hence defined globally.
 // Should be ok in respect to good practice, since these variables all relate
 // to execution across the entire life of the server process.
 pthread_mutex_t lock;
-FILE *f;
-FILE *status;
+FILE *log_f;
+FILE *proc_f;
+struct rusage usage;
 
 int num_connections = 0;
 int num_wins = 0;
@@ -62,8 +74,8 @@ int main (int argc, char *argv[])
 	}
 
 	// Initialising the file pointer for writing to log.
-	f = fopen("log.txt", "w");
-	if (f == NULL)
+	log_f = fopen("log.txt", "w");
+	if (log_f == NULL)
 	{
 	    printf("Error opening file!\n");
 	    exit(1);
@@ -176,7 +188,7 @@ int main (int argc, char *argv[])
 
 	    		// Creating the individual game instance.
 	    		if (create_game(new_s, ip4, correct, state_info) < 0){
-	                sprintf(log_buf, "Max players (%d) reached.\n \
+	                sprintf(log_buf, "(0.0.0.0) Max players (%d) reached. \
 Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 	                write_log(log_buf);
 	            } else {
@@ -204,7 +216,7 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 	// We get to this block after receiving the SIGINT. Gracefully exiting.
 	end_execution(state_info);
 	close(s);
-	fclose(f);
+	fclose(log_f);
 
 	return 1;
 }
@@ -223,11 +235,9 @@ void sigint_handler(int dummy) {
 void end_execution(StateInfo *state_info) {
 
     char log_buf[LOG_MSG_LEN];
+
     sprintf(log_buf, "(0.0.0.0) Server shutting down.\n");
     write_log(log_buf);
-
-    char outgoing[OUTGOING_MSG_LEN];
-    sprintf(outgoing, "%dServer shutting down. Sorry!", DEAD);
 
     fprintf(stderr, "Server terminated.\n");
 
@@ -240,31 +250,18 @@ void end_execution(StateInfo *state_info) {
     sprintf(log_buf, "Num wins: %d.\n", num_wins);
 	write_log(log_buf);
 
-	status = fopen("/proc/self/status", "r");
+	proc_f = fopen(statm_path, "r");
 
-	if (status == NULL) 
+	if (proc_f == NULL) 
 	{
 		perror("Error opening file");
-		return(-1);
+		return;
 	}
 
-	char str[80];
-	long elapsed_seconds;
-	if (fgets(str, 80, status) != NULL) 
-	{
-		/* writing content to stdout */
-		puts(str);
-	}
-	close(status);
-
-    struct rusage usage;
-    getrusage(RUSAGE_SELF, &usage);
-
-    printf("help? %d\n", getrusage(RUSAGE_CHILDREN, &usage));
-
-    printf("user CPU time: %d\n", usage.ru_utime.tv_sec);
-    printf("system CPU time: %d\n", usage.ru_stime.tv_sec);
-    printf("system CPU time: %ld\n", usage.ru_maxrss);
+	// Gracefully killing all the threads for each client's game.
+	// Sends them a shutdown message and frees memory.
+    char outgoing[OUTGOING_MSG_LEN];
+    sprintf(outgoing, "%dServer shutting down. Sorry!", DEAD);
 
     for (int x = 0; x < state_info->max_size; x++) {
         if (state_info->instances[x] != NULL) {
@@ -275,12 +272,11 @@ void end_execution(StateInfo *state_info) {
             send(state_info->instances[x]->s, outgoing, OUTGOING_MSG_LEN, 0);
             close(state_info->instances[x]->s);
 
+            // This isn't strictly necessary since the server is shutting down.
             free(state_info->instances[x]);
             state_info->instances[x] = NULL;
             state_info->num_items -= 1;
         }
     }
-
-
 
 }

@@ -1,8 +1,12 @@
 // Daniel Porteous porteousd
 
+#define _GNU_SOURCE
 #include "game.h"
 
+#include <sys/resource.h>
+
 extern int num_wins;
+extern struct rusage usage;
 
 /* 
 ** Returns id for the thread maybe?
@@ -12,18 +16,18 @@ int create_game(int sock_id, char *ip4, char *correct, StateInfo *state_info) {
     // The thread ID will be set by pthread_create later.
     Instance *new_game = new_instance(state_info, sock_id, ip4, (pthread_t)-1);
 
-    if (correct == NULL) {
-        new_game->code = get_random_code();
-    } else {
-        new_game->code = correct;
-    }
-
     if (new_game == NULL) {
         // Error message currently hardcoded prepended with 0.
         // TODO this should be more extensible.
         send(sock_id, "0Sorry, max players reached.", 28, 0);
         close(sock_id);
         return -1; // blah do more errno or something?
+    }
+
+    if (correct == NULL) {
+        new_game->code = get_random_code();
+    } else {
+        new_game->code = correct;
     }
 
     // Make it return 1 if this fails maybe.
@@ -63,18 +67,12 @@ void *run_instance(void *param)
 
     send_welcome(sock_id);
 
-    // No need for +1 because we know input length therefore no sentinel.
-    // TODO revise this position
-    char msg[CODE_LENGTH+1]; 
+    // Add our own sentinel for printing purposes.
+    char msg[CODE_LENGTH+1];
     
     // todo dont forget about this len thing.
     while (recv(sock_id, &msg, CODE_LENGTH, 0))
     {
-        // Checking for a DEAD signal from the client (usually caused by
-        // interrupt like SIGINT from ctrl+C).
-        if (msg[0] == DEAD) {
-            break;
-        }
         msg[CODE_LENGTH] = '\0';
         if (game_step(msg, correct, instance) == 0)
             break;
@@ -85,6 +83,7 @@ void *run_instance(void *param)
 
     sprintf(log_buf, "(%s)(%d) Client disconnected.\n", ip4, sock_id);
     write_log(log_buf);
+    pthread_exit(NULL);
 
 }
 
@@ -96,6 +95,13 @@ int game_step(char *msg, char *correct, Instance *instance) {
     int sock_id = instance->s;
     char *ip4 = instance->ip4;
     char log_buf[LOG_MSG_LEN];
+
+    printf("help? %d\n", getrusage(RUSAGE_THREAD, &usage));
+
+    printf("user CPU time: %d\n", usage.ru_utime.tv_sec);
+    printf("system CPU time: %d\n", usage.ru_stime.tv_sec);
+    printf("current rss: %ld\n", usage.ru_ixrss);
+    printf("max rss: %ld\n", usage.ru_maxrss);
 
     // Buffer for output to be returned to client.
     char outgoing[OUTGOING_MSG_LEN];

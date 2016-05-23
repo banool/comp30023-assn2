@@ -83,6 +83,13 @@ void *run_instance(void *param)
     remove_instance(state_info, instance->t);
     close(sock_id);
 
+    printf("help? %d\n", getrusage(RUSAGE_THREAD, &usage));
+
+    printf("user CPU time: %ld.%06ld\n", usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
+    printf("system CPU time: %ld.%06ld\n", usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
+    printf("current rss: %ld\n", usage.ru_ixrss);
+    printf("max rss: %ld\n", usage.ru_maxrss);
+
     sprintf(log_buf, "(%s)(%d) Client disconnected.\n", ip4, sock_id);
     write_log(log_buf);
     pthread_exit(NULL);
@@ -97,13 +104,6 @@ int game_step(char *msg, char *correct, Instance *instance) {
     int sock_id = instance->s;
     char *ip4 = instance->ip4;
     char log_buf[LOG_MSG_LEN];
-
-    printf("help? %d\n", getrusage(RUSAGE_THREAD, &usage));
-
-    printf("user CPU time: %d\n", usage.ru_utime.tv_sec);
-    printf("system CPU time: %d\n", usage.ru_stime.tv_sec);
-    printf("current rss: %ld\n", usage.ru_ixrss);
-    printf("max rss: %ld\n", usage.ru_maxrss);
 
     // Buffer for output to be returned to client.
     char outgoing[OUTGOING_MSG_LEN];

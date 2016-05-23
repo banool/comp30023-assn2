@@ -10,3 +10,4 @@
 #define LOG_MSG_LEN 110
 
 void write_log(char *inp);
+void write_log_raw(char *inp);

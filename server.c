@@ -45,6 +45,7 @@ int main (int argc, char *argv[])
 
 	// Allowing server to gracefully handle SIGINT.
 	signal(SIGINT, sigint_handler);
+	signal(SIGTERM, sigint_handler);
 
 	// Making a buffer for the log file and setting it to null.
     char log_buf[LOG_MSG_LEN];
@@ -241,24 +242,44 @@ void end_execution(StateInfo *state_info) {
 
     fprintf(stderr, "Server terminated.\n");
 
-    sprintf(log_buf, "Performance and resource info:\n");
-    write_log(log_buf);
+    sprintf(log_buf, "\nStats about the clients and their games:\n");
+    write_log_raw(log_buf);
 
     // Generic info about connections and wins.
-    sprintf(log_buf, "Num connections: %d.\n", num_connections);
-    write_log(log_buf);
-    sprintf(log_buf, "Num wins: %d.\n", num_wins);
-	write_log(log_buf);
+    sprintf(log_buf, "Num connections: %d.\nNum wins: %d.\n", 
+    	num_connections, num_wins);
+    write_log_raw(log_buf);
 
-	// Getting info from proc about the resource usage of the process and 
-	// its child threads.
+    // Opening proc using the /proc/self symlink.
 	proc_f = fopen(statm_path, "r");
-
 	if (proc_f == NULL)
 	{
 		perror("Error opening proc file.");
 		return;
 	}
+
+	// Writing the info from /proc/self/statm to a struct.
+	statm_t result;
+	if (7 != fscanf(proc_f,"%ld %ld %ld %ld %ld %ld %ld", &result.size, 
+		&result.resident, &result.share, &result.text, &result.lib, 
+		&result.data, &result.dt))
+  	{
+	    perror(statm_path);
+	    return;
+  	}
+  	fclose(proc_f);
+
+    sprintf(log_buf, "\nInfo about the process from proc:\n");
+    write_log_raw(log_buf);
+  	// Writing this data to the log.	
+  	sprintf(log_buf, "Total memory size:       %ld.\n", result.size);
+  	write_log_raw(log_buf);
+  	sprintf(log_buf, "Resident set size (RSS): %ld.\n", result.resident);
+  	write_log_raw(log_buf);
+  	sprintf(log_buf, "Text (code):             %ld.\n", result.text);
+  	write_log_raw(log_buf);
+  	sprintf(log_buf, "Data + stack:            %ld.\n", result.data);
+  	write_log_raw(log_buf);
 
 	// Gracefully killing all the threads for each client's game.
 	// Sends them a shutdown message and frees memory.

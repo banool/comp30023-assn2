@@ -23,11 +23,14 @@ void end_execution(StateInfo *state_info);
 // to execution across the entire life of the server process.
 pthread_mutex_t lock;
 FILE *f;
+FILE *status;
+
 int num_connections = 0;
 int num_wins = 0;
 
 int main (int argc, char *argv[])
 {
+
 	// Allowing server to gracefully handle SIGINT.
 	signal(SIGINT, sigint_handler);
 
@@ -237,6 +240,23 @@ void end_execution(StateInfo *state_info) {
     sprintf(log_buf, "Num wins: %d.\n", num_wins);
 	write_log(log_buf);
 
+	status = fopen("/proc/self/status", "r");
+
+	if (status == NULL) 
+	{
+		perror("Error opening file");
+		return(-1);
+	}
+
+	char str[80];
+	long elapsed_seconds;
+	if (fgets(str, 80, status) != NULL) 
+	{
+		/* writing content to stdout */
+		puts(str);
+	}
+	close(status);
+
     struct rusage usage;
     getrusage(RUSAGE_SELF, &usage);
 
@@ -260,4 +280,7 @@ void end_execution(StateInfo *state_info) {
             state_info->num_items -= 1;
         }
     }
+
+
+
 }

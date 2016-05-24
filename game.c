@@ -7,7 +7,6 @@
 #include <sys/resource.h>
 
 extern int num_wins;
-struct rusage usage;
 
 char reject_message[OUTGOING_MSG_LEN] = "0Sorry, max players reached.";
 
@@ -83,17 +82,10 @@ void *run_instance(void *param)
 
     remove_instance(state_info, instance->t);
     close(sock_id);
-
     
     sprintf(log_buf, "(%s)(%d) Client disconnected.\n", ip4, sock_id);
     write_log(log_buf);
 
-        printf("help? %d\n", getrusage(RUSAGE_THREAD, &usage));
-
-    printf("user CPU time: %ld.%06ld\n", usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
-    printf("system CPU time: %ld.%06ld\n", usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
-    printf("current rss: %ld\n", usage.ru_ixrss);
-    printf("max rss: %ld\n", usage.ru_maxrss);
     pthread_exit(NULL);
 
 }

@@ -219,14 +219,6 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 	close(s);
 	fclose(log_f);
 
-/*	getrusage(RUSAGE_SELF, &usage);
-	//printf("help? %d\n", );
-
-    printf("user CPU time: %ld.%06ld\n", usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
-    printf("system CPU time: %ld.%06ld\n", usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
-    printf("current rss: %ld\n", usage.ru_ixrss);
-    printf("max rss: %ld\n", usage.ru_maxrss);*/
-
 	return 1;
 }
 
@@ -309,5 +301,13 @@ void end_execution(StateInfo *state_info) {
             state_info->num_items -= 1;
         }
     }
+
+    struct rusage usage;
+	getrusage(RUSAGE_SELF, &usage);
+
+    printf("user CPU time: %ld.%06ld\n", usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
+    printf("system CPU time: %ld.%06ld\n", usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
+    printf("current rss: %ld\n", usage.ru_ixrss);
+    printf("max rss: %ld\n", usage.ru_maxrss);
 
 }

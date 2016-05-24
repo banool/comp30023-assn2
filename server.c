@@ -8,8 +8,8 @@
 #include <errno.h>
 #include <poll.h>
 #include <signal.h>
-#include <sys/resource.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 
 #include "game.h"
 #include "logging.h"
@@ -35,7 +35,7 @@ const char *statm_path = "/proc/self/statm";
 pthread_mutex_t lock;
 FILE *log_f;
 FILE *proc_f;
-struct rusage usage;
+
 
 int num_connections = 0;
 int num_wins = 0;
@@ -218,6 +218,14 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 	end_execution(state_info);
 	close(s);
 	fclose(log_f);
+
+/*	getrusage(RUSAGE_SELF, &usage);
+	//printf("help? %d\n", );
+
+    printf("user CPU time: %ld.%06ld\n", usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
+    printf("system CPU time: %ld.%06ld\n", usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
+    printf("current rss: %ld\n", usage.ru_ixrss);
+    printf("max rss: %ld\n", usage.ru_maxrss);*/
 
 	return 1;
 }

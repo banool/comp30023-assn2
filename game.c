@@ -3,10 +3,11 @@
 #define _GNU_SOURCE
 #include "game.h"
 
+#include <sys/time.h>
 #include <sys/resource.h>
 
 extern int num_wins;
-extern struct rusage usage;
+struct rusage usage;
 
 char reject_message[OUTGOING_MSG_LEN] = "0Sorry, max players reached.";
 
@@ -83,15 +84,16 @@ void *run_instance(void *param)
     remove_instance(state_info, instance->t);
     close(sock_id);
 
-    printf("help? %d\n", getrusage(RUSAGE_THREAD, &usage));
+    
+    sprintf(log_buf, "(%s)(%d) Client disconnected.\n", ip4, sock_id);
+    write_log(log_buf);
+
+        printf("help? %d\n", getrusage(RUSAGE_THREAD, &usage));
 
     printf("user CPU time: %ld.%06ld\n", usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
     printf("system CPU time: %ld.%06ld\n", usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
     printf("current rss: %ld\n", usage.ru_ixrss);
     printf("max rss: %ld\n", usage.ru_maxrss);
-
-    sprintf(log_buf, "(%s)(%d) Client disconnected.\n", ip4, sock_id);
-    write_log(log_buf);
     pthread_exit(NULL);
 
 }

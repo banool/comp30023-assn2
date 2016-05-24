@@ -303,11 +303,15 @@ void end_execution(StateInfo *state_info) {
     }
 
     struct rusage usage;
-	getrusage(RUSAGE_SELF, &usage);
+	getrusage(RUSAGE_CHILDREN, &usage);
 
-    printf("user CPU time: %ld.%06ld\n", usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
-    printf("system CPU time: %ld.%06ld\n", usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
-    printf("current rss: %ld\n", usage.ru_ixrss);
-    printf("max rss: %ld\n", usage.ru_maxrss);
+    sprintf(log_buf, "User CPU time: %ld.%06ld\n", 
+    	usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
+    write_log_raw(log_buf);
+    sprintf(log_buf, "System CPU time: %ld.%06ld\n", 
+    	usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
+    write_log_raw(log_buf);
+    sprintf(log_buf, "Max RSS: %ld\n", usage.ru_maxrss);
+    write_log_raw(log_buf);
 
 }

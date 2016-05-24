@@ -269,8 +269,7 @@ void end_execution(StateInfo *state_info) {
   	}
   	fclose(proc_f);
 
-    sprintf(log_buf, "\nInfo about the process from proc:\n");
-    write_log_raw(log_buf);
+    write_log_raw("\nInfo about the process execution from proc:\n");
   	// Writing this data to the log.	
   	sprintf(log_buf, "Total memory size:       %ld.\n", result.size);
   	write_log_raw(log_buf);
@@ -303,8 +302,9 @@ void end_execution(StateInfo *state_info) {
     }
 
     struct rusage usage;
-	getrusage(RUSAGE_CHILDREN, &usage);
+	getrusage(RUSAGE_SELF, &usage);
 
+	write_log_raw("\nInfo about the process execution from rusage:\n");
     sprintf(log_buf, "User CPU time: %ld.%06ld\n", 
     	usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
     write_log_raw(log_buf);

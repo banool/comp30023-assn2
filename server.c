@@ -307,13 +307,13 @@ void end_execution(StateInfo *state_info) {
 
 	sprintf(log_buf, "\nInfo about the process execution from rusage:\n");
 	write_log_raw(log_buf);
-    sprintf(log_buf, "User CPU time: %ld.%06ld\n", 
+    sprintf(log_buf, "User CPU time: %ld.%09ldsec.\n", 
     	usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
     write_log_raw(log_buf);
-    sprintf(log_buf, "System CPU time: %ld.%06ld\n", 
+    sprintf(log_buf, "System CPU time: %ld.%06ldsec.\n", 
     	usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
     write_log_raw(log_buf);
-    sprintf(log_buf, "Max RSS: %ld\n", usage.ru_maxrss);
+    sprintf(log_buf, "Max resident set size (RSS): %ld.\n", usage.ru_maxrss);
     write_log_raw(log_buf);
 
 }

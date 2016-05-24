@@ -2,8 +2,6 @@
 
 // Started with the server-2 code from Sockets/TCP2/
 
-#define _GNU_SOURCE
-
 #include <arpa/inet.h>
 #include <errno.h>
 #include <poll.h>
@@ -17,7 +15,7 @@
 #define LISTEN_QUEUE 5
 #define POLL_INTERVAL 500
 
-void sigint_handler(int dummy);
+void interrupt_handler(int dummy);
 void end_execution(StateInfo *state_info);
 
 /*
@@ -34,8 +32,6 @@ const char *statm_path = "/proc/self/statm";
 // to execution across the entire life of the server process.
 pthread_mutex_t lock;
 FILE *log_f;
-FILE *proc_f;
-
 
 int num_connections = 0;
 int num_wins = 0;
@@ -43,9 +39,9 @@ int num_wins = 0;
 int main (int argc, char *argv[])
 {
 
-	// Allowing server to gracefully handle SIGINT.
-	signal(SIGINT, sigint_handler);
-	signal(SIGTERM, sigint_handler);
+	// Allowing server to gracefully handle SIGINT and SIGTERM.
+	signal(SIGINT, interrupt_handler);
+	signal(SIGTERM, interrupt_handler);
 
 	// Making a buffer for the log file and setting it to null.
     char log_buf[LOG_MSG_LEN];
@@ -150,25 +146,25 @@ int main (int argc, char *argv[])
 
 	// Main server loop.
 	while (1) {
-		len=sizeof(client);
+		len = sizeof(client);
 
 		/*
 		** We use the poll() function outside of the accept so that we can
 		** properly handle incoming signal interrupts. accept() is a blocking
-		** function and it wouldn't process the SIGINT until a connection
+		** function, it wouldn't process the SIGINT/SIGTERM until a connection
 		** had been accepted. poll() checks if there is anything to be read on
 		** the socket first (every POLL_INTERVAL) before running the accept().
 		**
-		** A fork could also have been used to catch the SIGINT.
+		** A fork could also have been used to catch the SIGINT/SIGTERM.
 		** The polling solution however gives you a greater degree of fine tuned
 		** control both due to the non-blocking nature and the programmer
 		** defined checking interval, which also reduces computational expense.
 		**
 		** poll_res >= 0: Something ready to be read on the target fd/socket.
 		** poll_res == 0: Nothing ready to be read on the target fd/socket.
-		** poll_res <= 0: An error occurred, hopefully just because the SIGINT
-		**                interrupted the poll. We catch this and gracefully
-		**                shutdown the server.
+		** poll_res <= 0: An error occurred, hopefully just because the SIGINT/
+		**                SIGTERM interrupted the poll. We catch this and 
+		**                gracefully shutdown the server.
 		*/
 		poll_res = poll(poll_list, 1, POLL_INTERVAL);
 
@@ -202,8 +198,8 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 		} else if (poll_res == 0) {
 			continue;
 		} else {
-			// We watch for SIGILL and not SIGINT because the SIGINT causes
-			// poll to throw a SIGILL (system call interrupted).
+			// We watch for SIGILL and not SIGINT/SIGTERM because the these 
+			// cause poll to throw a SIGILL (system call interrupted).
 			if (errno == SIGILL) {
 				break;
 			}
@@ -214,7 +210,8 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 		}
 	}
 
-	// We get to this block after receiving the SIGINT. Gracefully exiting.
+	// We get to this block after receiving the SIGINT/SIGTERM.
+	// We now end execution gracefully and write resource info to the logs.
 	end_execution(state_info);
 	close(s);
 	fclose(log_f);
@@ -223,19 +220,23 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 }
 
 // Just breaks the while loop in main and returns control to the block after it.
-void sigint_handler(int dummy) {
+void interrupt_handler(int dummy) {
 	// This moves the next printed messaged to the next line, away from ^C
     printf("\n");
 }
 
 /*
-** This function is run when SIGINT is received. Loops through each instance
-** in state_info and kills the thread, sends a disconnect message to the client
-** and finally frees memory.
+** This function is run when SIGINT or SIGTERM is received. Loops through each 
+** instance in state_info and kills the thread, sends a disconnect message to
+** the client and finally frees memory.
 */
 void end_execution(StateInfo *state_info) {
 
     char log_buf[LOG_MSG_LEN];
+    char outgoing[OUTGOING_MSG_LEN];
+    FILE *proc_f;
+    statm_t result;
+    struct rusage usage;
 
     sprintf(log_buf, "(0.0.0.0) Server shutting down.\n");
     write_log(log_buf);
@@ -259,7 +260,6 @@ void end_execution(StateInfo *state_info) {
 	}
 
 	// Writing the info from /proc/self/statm to a struct.
-	statm_t result;
 	if (7 != fscanf(proc_f,"%ld %ld %ld %ld %ld %ld %ld", &result.size, 
 		&result.resident, &result.share, &result.text, &result.lib, 
 		&result.data, &result.dt))
@@ -283,7 +283,6 @@ void end_execution(StateInfo *state_info) {
 
 	// Gracefully killing all the threads for each client's game.
 	// Sends them a shutdown message and frees memory.
-    char outgoing[OUTGOING_MSG_LEN];
     sprintf(outgoing, "%dServer shutting down. Sorry!", DEAD);
 
     for (int x = 0; x < state_info->max_size; x++) {
@@ -302,18 +301,17 @@ void end_execution(StateInfo *state_info) {
         }
     }
 
-    struct rusage usage;
 	getrusage(RUSAGE_SELF, &usage);
 
 	sprintf(log_buf, "\nInfo about the process execution from rusage:\n");
 	write_log_raw(log_buf);
-    sprintf(log_buf, "User CPU time: %ld.%09ldsec.\n", 
+    sprintf(log_buf, "User CPU time:   %ld.%09ldsec.\n", 
     	usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
     write_log_raw(log_buf);
-    sprintf(log_buf, "System CPU time: %ld.%06ldsec.\n", 
+    sprintf(log_buf, "System CPU time: %ld.%09ldsec.\n", 
     	usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
     write_log_raw(log_buf);
-    sprintf(log_buf, "Max resident set size (RSS): %ld.\n", usage.ru_maxrss);
+    sprintf(log_buf, "Max RSS:         %ld.\n", usage.ru_maxrss);
     write_log_raw(log_buf);
 
 }

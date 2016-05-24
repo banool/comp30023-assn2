@@ -1,10 +1,6 @@
 // Daniel Porteous porteousd
 
-#define _GNU_SOURCE
 #include "game.h"
-
-#include <sys/time.h>
-#include <sys/resource.h>
 
 extern int num_wins;
 

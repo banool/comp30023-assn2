@@ -216,7 +216,7 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 			}
 			// Terminating after getting an unexpected error.
 			fprintf(stderr, "errno = %d\n", errno);
-			perror("Polling failed.");
+			perror("Polling failed");
 			exit(1);		
 		}
 	}
@@ -265,7 +265,7 @@ void end_execution(StateInfo *state_info) {
 	proc_f = fopen(statm_path, "r");
 	if (proc_f == NULL)
 	{
-		perror("Error opening proc file.");
+		perror("Error opening proc file");
 		return;
 	}
 

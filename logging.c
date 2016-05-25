@@ -31,6 +31,7 @@ void write_log_raw(char *inp) {
 
 	pthread_mutex_lock(&lock);
 	fprintf(log_f, "%s", inp);
+	printf("%s", inp);
 	pthread_mutex_unlock(&lock);
 
 	memset(inp, '\0', LOG_MSG_LEN);

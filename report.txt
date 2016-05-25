@@ -1,3 +1,20 @@
 There are 3 main sections of the post-execution performance info.
 I will use an example output from an execution to explain these.
 
+The first section is fairly self explanatory.
+[first section]
+
+The second section contains info from proc. On linux you can use the handy
+/proc/self symlink to access info from inside the process instead of having
+to use the appropriate thread id. This data is from /proc/self/statm.
+Blah is blah
+Blah is blah.
+etc.
+
+[second section]
+
+This final section contains info from getrusage. rusage is, unfortunately,
+fairly limited on linux considering many of the fields aren't maintained.
+However 3 fields were of interest, specifically those holding the time spent
+on the CPU in user mode, the CPU time in kernel mode and the max RSS (resident
+set size) throughout the life of server execution.

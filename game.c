@@ -2,8 +2,15 @@
 
 #include "game.h"
 
+// These are defined in server.c
 extern int num_wins;
+extern pthread_mutex_t lock;
 
+// Put this here so we only need to build the message once.
+// The function build_welcome will be called from server.c
+char welcome[WELCOME_LENGTH];
+
+// Hardcoded reject message put up here for easy access.
 char reject_message[OUTGOING_MSG_LEN] = "0Sorry, max players reached.";
 
 /* 
@@ -120,25 +127,27 @@ int game_step(char *msg, char *correct, Instance *instance) {
         sprintf(log_buf, "(0.0.0.0) Server hint = [%d,%d].\n", b, m);
         write_log(log_buf);
 
-        sprintf(outgoing, "%d[%d,%d]", ALIVE, b, m);
+        sprintf(outgoing, "%c[%d,%d]", ALIVE, b, m);
 
         // This means that the guess was correct.
         if (b == 4) {
             sprintf(log_buf, "(%s)(%d) SUCCESS Game Over.\n", ip4, sock_id);
             write_log(log_buf);
 
-            sprintf(outgoing, "%dSuccess! You won in %d turns.", DEAD, 
+            sprintf(outgoing, "%cSuccess! You won in %d turns.", DEAD, 
                 instance->turn);
             send(sock_id, outgoing, strlen(outgoing), 0);
 
+            pthread_mutex_lock(&lock);
             num_wins += 1;
+            pthread_mutex_unlock(&lock);
             return 0;
         }
         // This means that the guess was incorrect and we have reached turn 10. 
         else if (instance->turn == 10) {
             sprintf(log_buf, "(%s)(%d) FAILURE Game Over.\n", ip4, sock_id);
             write_log(log_buf);
-            sprintf(outgoing, "%dSorry, you ran out of turns :(", DEAD);
+            sprintf(outgoing, "%cSorry, you ran out of turns :(", DEAD);
             send(sock_id, outgoing, strlen(outgoing), 0);
 
             return 0;
@@ -155,7 +164,7 @@ int game_step(char *msg, char *correct, Instance *instance) {
     else {
         sprintf(log_buf, "(%s)(%d) INVALID Client guess invalid.\n", ip4, 
             sock_id);
-        sprintf(outgoing, "%dInvalid guess, try again.", ALIVE);
+        sprintf(outgoing, "%cInvalid guess, try again.", ALIVE);
     }
 
     write_log(log_buf);
@@ -169,11 +178,11 @@ int game_step(char *msg, char *correct, Instance *instance) {
     return 1;
 }
 
-// Sends the welcome message to the client.
+// Creates the welcome message to send to the client.
 // We build it line by line for readability's sake.
-void send_welcome(int sock_id)
+// Only called once from inside server, as it only needs to be created once.
+void build_welcome()
 {
-    char welcome[WELCOME_LENGTH];
     welcome[0] = ALIVE;
     strcat(welcome, "Welcome to Mastermind!\n\n");
     strcat(welcome, "How to play:\n");
@@ -185,8 +194,13 @@ void send_welcome(int sock_id)
     strcat(welcome, "You get 10 guesses. Good luck!\n");
     // Prints last line with two newlines, one here and one from the client.
     strcat(welcome, "\0");
+}
 
+// Sends the above welcome message through the given socket.
+void send_welcome(int sock_id)
+{
     send(sock_id, welcome, WELCOME_LENGTH, 0);
+    printf("welcome:\n%s\n", welcome);
 }
 
 // Generates a pretty decent pseudo random code.

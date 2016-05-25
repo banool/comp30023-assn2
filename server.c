@@ -48,6 +48,8 @@ FILE *log_f;
 int num_connections = 0;
 int num_wins = 0;
 
+extern char welcome[WELCOME_LENGTH];
+
 int main (int argc, char *argv[])
 {
 	// Allowing server to gracefully handle SIGINT and SIGTERM.
@@ -146,6 +148,9 @@ int main (int argc, char *argv[])
 
 	// Creating the struct that will keep track of all the instances.
 	StateInfo *state_info = create_state_info_struct(MAX_PLAYERS);
+
+	// Build tge welcome message in game.c so we only have to do it once.
+	build_welcome();
 
 	// Creating the struct for file descriptors to be polled.
 	struct pollfd poll_list[1];
@@ -293,7 +298,7 @@ void end_execution(StateInfo *state_info) {
 
 	// Gracefully killing all the threads for each client's game.
 	// Sends them a shutdown message and frees memory.
-    sprintf(outgoing, "%dServer shutting down. Sorry!", DEAD);
+    sprintf(outgoing, "%cServer shutting down. Sorry!", DEAD);
 
     for (int x = 0; x < state_info->max_size; x++) {
         if (state_info->instances[x] != NULL) {

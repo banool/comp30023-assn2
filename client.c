@@ -75,6 +75,7 @@ int main(int argc, char * argv[])
 	recv_len = recv(s, &welcome, WELCOME_LENGTH, 0);
 	printf("%.*s\n", recv_len-1, welcome+1);
 
+	// Killing execution if the server sent the DEAD char.
 	if (welcome[0] == DEAD) {
 		return 1;
 	}

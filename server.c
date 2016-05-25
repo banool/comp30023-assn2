@@ -1,11 +1,24 @@
 // Daniel Porteous porteousd
-
 // Started with the server-2 code from Sockets/TCP2/
 
+// Standard stuff
+#include <stdio.h>
+#include <stdlib.h>
+
+// UNIX and threads stuff
+#include <unistd.h>
+#include <pthread.h>
+
+// Networking stuff
+#include <sys/socket.h>
 #include <arpa/inet.h>
-#include <errno.h>
 #include <poll.h>
+
+// Error handling stuff
 #include <signal.h>
+#include <errno.h>
+
+// Resource usage stuff
 #include <sys/time.h>
 #include <sys/resource.h>
 
@@ -13,15 +26,13 @@
 #include "logging.h"
 
 #define LISTEN_QUEUE 5
-#define POLL_INTERVAL 500
+#define POLL_INTERVAL 250 // Check for new connections 4 times a second.
 
 void interrupt_handler(int dummy);
 void end_execution(StateInfo *state_info);
 
-/*
-** Thanks to code from the 3rd answer on StackOverflow here:
-** https://goo.gl/EYFRox
-*/
+// Thanks to code from the 3rd answer on StackOverflow here:
+// https://goo.gl/EYFRox
 typedef struct {
     unsigned long size, resident, share, text, lib, data, dt;
 } statm_t;
@@ -33,12 +44,12 @@ const char *statm_path = "/proc/self/statm";
 pthread_mutex_t lock;
 FILE *log_f;
 
+// Will be updated from game.c
 int num_connections = 0;
 int num_wins = 0;
 
 int main (int argc, char *argv[])
 {
-
 	// Allowing server to gracefully handle SIGINT and SIGTERM.
 	signal(SIGINT, interrupt_handler);
 	signal(SIGTERM, interrupt_handler);
@@ -205,8 +216,8 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 			}
 			// Terminating after getting an unexpected error.
 			fprintf(stderr, "errno = %d\n", errno);
-			perror ("Polling failed");
-			exit (1);		
+			perror("Polling failed.");
+			exit(1);		
 		}
 	}
 
@@ -216,7 +227,7 @@ Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 	close(s);
 	fclose(log_f);
 
-	return 1;
+	return 0;
 }
 
 // Just breaks the while loop in main and returns control to the block after it.
@@ -238,15 +249,14 @@ void end_execution(StateInfo *state_info) {
     statm_t result;
     struct rusage usage;
 
+    // Shutdown messages.
     sprintf(log_buf, "(0.0.0.0) Server shutting down.\n");
     write_log(log_buf);
-
     fprintf(stderr, "Server terminated.\n");
 
+	// Generic info about connections and wins.
     sprintf(log_buf, "\nStats about the clients and their games:\n");
     write_log_raw(log_buf);
-
-    // Generic info about connections and wins.
     sprintf(log_buf, "Num connections: %d.\nNum wins: %d.\n", 
     	num_connections, num_wins);
     write_log_raw(log_buf);
@@ -269,9 +279,9 @@ void end_execution(StateInfo *state_info) {
   	}
   	fclose(proc_f);
 
+  	// Writing this data to the log.
   	sprintf(log_buf, "\nInfo about the process execution from proc:\n");
     write_log_raw(log_buf);
-  	// Writing this data to the log.	
   	sprintf(log_buf, "Total memory size:       %ld.\n", result.size);
   	write_log_raw(log_buf);
   	sprintf(log_buf, "Resident set size (RSS): %ld.\n", result.resident);
@@ -301,17 +311,17 @@ void end_execution(StateInfo *state_info) {
         }
     }
 
+    // Get rusage data about CPU run time and max RSS and write to log.
 	getrusage(RUSAGE_SELF, &usage);
 
 	sprintf(log_buf, "\nInfo about the process execution from rusage:\n");
 	write_log_raw(log_buf);
     sprintf(log_buf, "User CPU time:   %ld.%09ldsec.\n", 
-    	usage.ru_utime.tv_sec, usage.ru_utime.tv_usec);
+    	(long)usage.ru_utime.tv_sec, (long)usage.ru_utime.tv_usec);
     write_log_raw(log_buf);
     sprintf(log_buf, "System CPU time: %ld.%09ldsec.\n", 
-    	usage.ru_stime.tv_sec, usage.ru_stime.tv_usec);
+    	(long)usage.ru_stime.tv_sec, (long)usage.ru_stime.tv_usec);
     write_log_raw(log_buf);
     sprintf(log_buf, "Max RSS:         %ld.\n", usage.ru_maxrss);
     write_log_raw(log_buf);
-
 }

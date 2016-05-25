@@ -7,21 +7,22 @@
 #include <assert.h>
 #include <string.h>
 
+// Struct representing a single game instance.
 typedef struct Instance_s {
     pthread_t t;
     int s;
-    int turn;
     char *ip4;
+    int turn;
     char *code;
 } Instance;
 
+// Holds info about the entire server state, with a struct holding
+// info for each game currently running.
 typedef struct StateInfo_s {
-    /*
-    ** The array is used cyclically. TODO explain some more.
-    */
     int num_items;
     int max_size;
-    // TODO explain why using this.
+    // An array of pointers to structs. This is a flexible
+    // array member and will require a special malloc.
     Instance *instances[];
 } StateInfo;
 

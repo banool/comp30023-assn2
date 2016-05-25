@@ -4,15 +4,15 @@
 
 extern pthread_mutex_t lock;
 
+// Creates the StateInfo struct which tracks the info of each individual game.
 StateInfo *create_state_info_struct(int max_size)
 {
     StateInfo *state_info;
     /* 
     ** This odd malloc is due to how flexible/dynamic array members work
-    ** inside a struct. You don't malloc the array separately like this:
-    ** q->queue = malloc(sizeof(Process*) * BASE_QUEUE_SIZE);
-    ** but instead just malloc the Queue the size of both the size of the
-    ** struct AND the size of the array.
+    ** inside a struct. You don't malloc the array separately but
+    ** instead just malloc the Queue the size of both the size of the
+    ** struct AND the size of the array in the one malloc.
     */
     state_info = malloc(sizeof(StateInfo) + sizeof(Instance*) * max_size);
     assert(state_info);
@@ -30,11 +30,11 @@ StateInfo *create_state_info_struct(int max_size)
     return state_info;
 }
 
+// Create a new_instance, insert it into the StateInfo struct and return it.
 Instance *new_instance(StateInfo *state_info, int sock_id, char *ip4,
     pthread_t thread_id)
 {
-    //TODO you need mutext locks at points in this.
-    // TODO explain
+    // If we are at max players, reject the request to make a new_instance.
     if (state_info->num_items == state_info->max_size) {
         return NULL;
     }
@@ -42,24 +42,26 @@ Instance *new_instance(StateInfo *state_info, int sock_id, char *ip4,
     Instance *i = malloc(sizeof(Instance));
     assert(i);
 
-    i->s = sock_id;
-    i->t = thread_id;
+    i->s =   sock_id;
+    i->t =   thread_id;
     i->ip4 = malloc(sizeof(char) * strlen(ip4));
-    strncpy(i->ip4, ip4, strlen(ip4));
+    strncpy(i->ip4, ip4, strlen(ip4)+1);
     i->ip4[strlen(ip4)] = '\0';
     i->turn = 1;
 
-    // Is this locking sufficient? TODO
+    // Use a mutex lock before adding the new instance to the array so we
+    // don't accidentally accidentally write to the same index twice.
     pthread_mutex_lock(&lock);
-    // TODO explain this block
+    
+    // Iterate through the array until we find an empty spot for the new game.
     int index = 0;
     while (state_info->instances[index] != NULL) {
         index++;
     }
 
     state_info->instances[index] = i;
-
     state_info->num_items += 1;
+
     pthread_mutex_unlock(&lock);
     return i;
 }
@@ -71,6 +73,8 @@ void remove_instance(StateInfo *state_info, pthread_t thread_id)
     for (int x = 0; x < state_info->max_size; x++) {
         if (state_info->instances[x] != NULL) {
             if (state_info->instances[x]->t == thread_id) {
+                // Use a mutex lock while removing and changing the recorded
+                // number of items to avoid clashes.
                 pthread_mutex_lock(&lock);
                 free(state_info->instances[x]);
                 state_info->instances[x] = NULL;
@@ -81,6 +85,7 @@ void remove_instance(StateInfo *state_info, pthread_t thread_id)
     }
 }
 
+// Print all the instances. Purely diagnostic.
 void print_instances(StateInfo *state_info)
 {
     for (int x = 0; x < state_info->max_size; x++) {
@@ -92,6 +97,12 @@ void print_instances(StateInfo *state_info)
     }
 }
 
+/*
+** Retrieves an instance from StateInfo by looking for its unique thread id.
+** We use this so we can find the appropriate instance when a new thread
+** is spawned, considering we can't pass the instance through to the worker
+** function of pthread_create because we need to pass StateInfo.
+*/
 Instance *get_instance(StateInfo *state_info, pthread_t thread_id)
 {
     for (int x = 0; x < state_info->max_size; x++) {
@@ -101,6 +112,8 @@ Instance *get_instance(StateInfo *state_info, pthread_t thread_id)
             }
         }
     }
+    // We should never get here as we only ever pass valid thread_ids.
+    return NULL;
 }
 
 

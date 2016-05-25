@@ -1,5 +1,11 @@
 // Daniel Porteous porteousd
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <assert.h>
+#include <string.h>
 #include <sys/socket.h>
 
 #include "instances.h"

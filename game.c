@@ -7,7 +7,11 @@ extern int num_wins;
 char reject_message[OUTGOING_MSG_LEN] = "0Sorry, max players reached.";
 
 /* 
-** Returns id for the thread maybe?
+** Creates a new game. First we create a new instance. If thhis function returns
+** NULL, it means we've hit max players so we send a reject message and return
+** non-zero to the server so it can log accordingly. After this, we generate a
+** (pseduo) random code if none was supplied on initial execution.
+** Finally we create a thread and pass it the StateInfo to work with.
 */
 int create_game(int sock_id, char *ip4, char *correct, StateInfo *state_info) {
 
@@ -28,21 +32,22 @@ int create_game(int sock_id, char *ip4, char *correct, StateInfo *state_info) {
         new_game->code = correct;
     }
 
-    // Make it return 1 if this fails maybe.
-    // Back in server, make a line like
-    // while(create_game())
-    // which will try to keep making it until it succeeds.
+    // Create the new thread and pass in the StateInfo.
+    // We will relocate the appropriate instance inside the thread.
     pthread_create(&new_game->t, NULL, run_instance, state_info);
-    // Care. The thread number that pthread_join is waiting for is not
-    // the number that is assigned in pthread_create. In run_instance
-    // the real thread number is assigned and this is the one that is used
-    // for the pthread_join and the remove_instance.
-    //pthread_join(new_game->t, NULL);
-    //printf("removing %d\n", new_game->t);
 
     return 0;
 }
 
+/*
+** This is the process spawned by pthread_create, into which we pass StateInfo.
+** Using pthread_self, we relocate the appropriate instance and set up some
+** variables for the game, log some stuff to log, send a welcome message, etc.
+** We then enter the main game loop, waiting for messages from the client
+** which we then handle with game_step. Once the game ends, we remove the
+** appropriate instance, close the socket and print to log before finally
+** exiting the thread.
+*/
 void *run_instance(void *param)
 {
     /*
@@ -68,7 +73,8 @@ void *run_instance(void *param)
     // Add our own sentinel for printing purposes.
     char msg[CODE_LENGTH+1];
     
-    // todo dont forget about this len thing.
+    // Main game loop. We don't have to worry about the len that recv returns
+    // because we know we will get 4 chars and these are all that concern us.
     while (recv(sock_id, &msg, CODE_LENGTH, 0))
     {
         msg[CODE_LENGTH] = '\0';
@@ -83,10 +89,15 @@ void *run_instance(void *param)
     write_log(log_buf);
 
     pthread_exit(NULL);
-
 }
 
-// Returns 0 when done, otherwise returns 1 to indicate the game isn't done.
+/*
+** This is the main game loop, containing most of the game logic.
+** Returns 0 when done, otherwise returns 1 to indicate the game isn't done.
+** Essentially, we check whether the code was valid and if so, check whether
+** it was correct. If so, they win and exit accordingly. Otherwise send the
+** client the appropriate feedback.
+*/
 int game_step(char *msg, char *correct, Instance *instance) {
 
     // Repeating these lines inside game_step saves us passing these 
@@ -98,40 +109,52 @@ int game_step(char *msg, char *correct, Instance *instance) {
     // Buffer for output to be returned to client.
     char outgoing[OUTGOING_MSG_LEN];
 
+    // b represents correct position and colour.
+    // m represents incorrect position but correct colour.
     int b = 0;
     int m = 0;
 
+    // cmp_codes returns 0 when the guess was a valid code.
+    // We check the b variable to determine if it was correct.
     if (cmp_codes(msg, correct, &b, &m) == 0) {
-        // TODO check if this is correct. (printing [b,m]) before success or failure.
         sprintf(log_buf, "(0.0.0.0) Server hint = [%d,%d].\n", b, m);
         write_log(log_buf);
 
         sprintf(outgoing, "%d[%d,%d]", ALIVE, b, m);
 
+        // This means that the guess was correct.
         if (b == 4) {
             sprintf(log_buf, "(%s)(%d) SUCCESS Game Over.\n", ip4, sock_id);
             write_log(log_buf);
 
-            sprintf(outgoing, "%dSuccess! You won in %d turns.", DEAD, instance->turn);
+            sprintf(outgoing, "%dSuccess! You won in %d turns.", DEAD, 
+                instance->turn);
             send(sock_id, outgoing, strlen(outgoing), 0);
 
             num_wins += 1;
             return 0;
-        } else if (instance->turn == 10) {
+        }
+        // This means that the guess was incorrect and we have reached turn 10. 
+        else if (instance->turn == 10) {
             sprintf(log_buf, "(%s)(%d) FAILURE Game Over.\n", ip4, sock_id);
             write_log(log_buf);
-            //TODO make all these consistent. so like get rid of strcpy in place of sprintf even if it has no args.
             sprintf(outgoing, "%dSorry, you ran out of turns :(", DEAD);
             send(sock_id, outgoing, strlen(outgoing), 0);
 
             return 0;
-        } else {
-            sprintf(log_buf, "(%s)(%d) Client guess = \"%s\".\n", ip4, sock_id, msg);
+        } 
+        // This means the guess was incorrect but they have more turns left.
+        else {
+            sprintf(log_buf, "(%s)(%d) Client guess = \"%s\".\n", ip4, sock_id, 
+                msg);
 
             instance->turn += 1;
         }
-    } else {
-        sprintf(log_buf, "(%s)(%d) INVALID Client guess invalid.\n", ip4, sock_id);
+    }
+    // The guess was invalid, tell the client to try again. 
+    else {
+        sprintf(log_buf, "(%s)(%d) INVALID Client guess invalid.\n", ip4, 
+            sock_id);
         sprintf(outgoing, "%dInvalid guess, try again.", ALIVE);
     }
 
@@ -146,6 +169,8 @@ int game_step(char *msg, char *correct, Instance *instance) {
     return 1;
 }
 
+// Sends the welcome message to the client.
+// We build it line by line for readability's sake.
 void send_welcome(int sock_id)
 {
     char welcome[WELCOME_LENGTH];
@@ -164,6 +189,7 @@ void send_welcome(int sock_id)
     send(sock_id, welcome, WELCOME_LENGTH, 0);
 }
 
+// Generates a pretty decent pseudo random code.
 char *get_random_code()
 {
     char *code;
@@ -185,9 +211,7 @@ char *get_random_code()
 ** m: num of colours that are part of the code but not in the correct positions
 ** 
 ** Returns -1 if any of the letters are out of the accepted range. 0 otherwise.
-** TODO this is slightly wrong still. i.e. 3,1 on ACBD vs DCBD instead of 3,0.
 */
-
 int cmp_codes(char *guess, char *correct, int *b, int *m)
 {
     int i;
@@ -200,21 +224,25 @@ int cmp_codes(char *guess, char *correct, int *b, int *m)
     char correct_d[CODE_LENGTH];
     strncpy(correct_d, correct, CODE_LENGTH);
 
+    // This loop checks for validity in the guess and then correctly
+    // positioned and coloured pins.
     for (i = 0; i < CODE_LENGTH; i++) {
-    // Chcecking that the characters are in the acceptable range.
-    // TODO are these magic numbers???
+        // Checking that the characters are in the acceptable range.
+        // Are these magic numbers? Perhaps not, they're intrinsic to the game.
         if (guess_d[i] < 'A' || guess_d[i] > 'F') {
             *b = 0;
             return -1;
         }
 
-        // Setting correctly positioned chars to Z so we don't double up.
+        // Setting correctly positioned chars to 0 or 1 so we don't double up.
         if (guess_d[i] == correct_d[i]) {
-            correct_d[i] = 0; // Should I be using something else? \0?
+            correct_d[i] = 0;
             guess_d[i] = 1;
             *b = *b + 1;
         }
     }
+
+    // This loop checks for incorrectly positioned but correctly coloured pins.
     for (i = 0; i < CODE_LENGTH; i++) {
         for (j = 0; j < CODE_LENGTH; j++) {
             if (guess_d[i] == correct_d[j]) {
@@ -224,5 +252,6 @@ int cmp_codes(char *guess, char *correct, int *b, int *m)
             }
         }
     }
+
     return 0;
 }

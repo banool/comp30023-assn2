@@ -127,6 +127,10 @@ int game_step(char *msg, char *correct, Instance *instance) {
         sprintf(log_buf, "(0.0.0.0) Server hint = [%d,%d].\n", b, m);
         write_log(log_buf);
 
+        sprintf(log_buf, "(%s)(%d) Client guess = \"%s\".\n", ip4, 
+            sock_id, msg);
+        write_log(log_buf);
+
         sprintf(outgoing, "%c[%d,%d]", ALIVE, b, m);
 
         // This means that the guess was correct.
@@ -147,27 +151,22 @@ int game_step(char *msg, char *correct, Instance *instance) {
         else if (instance->turn == 10) {
             sprintf(log_buf, "(%s)(%d) FAILURE Game Over.\n", ip4, sock_id);
             write_log(log_buf);
+            
             sprintf(outgoing, "%cSorry, you ran out of turns :(", DEAD);
             send(sock_id, outgoing, strlen(outgoing), 0);
 
             return 0;
-        } 
-        // This means the guess was incorrect but they have more turns left.
-        else {
-            sprintf(log_buf, "(%s)(%d) Client guess = \"%s\".\n", ip4, sock_id, 
-                msg);
-
-            instance->turn += 1;
         }
+        // Getting here means the guess was incorrect but they have more turns.
+        instance->turn += 1;    
     }
+
     // The guess was invalid, tell the client to try again. 
     else {
         sprintf(log_buf, "(%s)(%d) INVALID Client guess invalid.\n", ip4, 
             sock_id);
         sprintf(outgoing, "%cInvalid guess, try again.", ALIVE);
     }
-
-    write_log(log_buf);
 
     send(sock_id, outgoing, strlen(outgoing), 0);
     b = 0;
@@ -200,7 +199,6 @@ void build_welcome()
 void send_welcome(int sock_id)
 {
     send(sock_id, welcome, WELCOME_LENGTH, 0);
-    printf("welcome:\n%s\n", welcome);
 }
 
 // Generates a pretty decent pseudo random code.

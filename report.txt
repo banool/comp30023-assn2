@@ -1,20 +1,44 @@
 There are 3 main sections of the post-execution performance info.
 I will use an example output from an execution to explain these.
 
-The first section is fairly self explanatory.
-[first section]
+The first section is fairly self explanatory, simply containing info about 
+the clients' games.
+
+	Stats about the clients and their games:
+	Num connections: 5.
+	Num wins: 0.
 
 The second section contains info from proc. On linux you can use the handy
 /proc/self symlink to access info from inside the process instead of having
 to use the appropriate thread id. This data is from /proc/self/statm.
-Blah is blah
-Blah is blah.
-etc.
 
-[second section]
+	Info about the process execution from proc:
+	Total memory size:       47923.
+	Resident set size (RSS): 218.
+	Text (code):             4.
+	Data + stack:            45900.
+
+The total memory size is all the memory that program has. This includes on disk
+or in swap space. The RSS on the other hand is just the memory in physical memory.
+The likely reason that the total memory size is so much bigger than the RSS (both
+in kb) is that many of of the functions from the library that are imported in the
+#includes aren't actually used in the server program.
+Text (code) is the actual code of the program. This is read only.
+The final field is related to the runtime data of the program. This includes 
+things like memory that has been malloced throughout dynamic execution.
 
 This final section contains info from getrusage. rusage is, unfortunately,
 fairly limited on linux considering many of the fields aren't maintained.
 However 3 fields were of interest, specifically those holding the time spent
 on the CPU in user mode, the CPU time in kernel mode and the max RSS (resident
 set size) throughout the life of server execution.
+
+	Info about the process execution from rusage:
+	User CPU time:   0.000014997sec.
+	System CPU time: 0.000058991sec.
+	Max RSS:         2860.
+
+User and system CPU time are as the name suggests. User time is generally comprised
+of calculations (such as comparing two codes) whereas system time is usually spent
+waiting for kernel level commands to finish, such as waiting for file I/O.
+

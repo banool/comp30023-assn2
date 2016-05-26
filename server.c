@@ -25,7 +25,7 @@
 #include "game.h"
 #include "logging.h"
 
-#define LISTEN_QUEUE 5
+#define LISTEN_QUEUE 10
 #define POLL_INTERVAL 250 // Check for new connections 4 times a second.
 
 void interrupt_handler(int dummy);

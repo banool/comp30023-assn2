@@ -42,3 +42,129 @@ User and system CPU time are as the name suggests. User time is generally compri
 of calculations (such as comparing two codes) whereas system time is usually spent
 waiting for kernel level commands to finish, such as waiting for file I/O.
 
+Using python with the multiprocessing module I created a script that runs x number
+of clients concurrently. Looking at the server logs, you can see that they are 
+indeed not running serially but at the same time. By starting at 4 connections and
+increasing by 4 each time, digitalis produced the following interesting output:
+
+4 connections:
+Info about the process execution from proc:
+Total memory size:       78130.
+Resident set size (RSS): 215.
+Text (code):             4.
+Data + stack:            76107.
+
+Info about the process execution from rusage:
+User CPU time:   0.000000000sec.
+System CPU time: 0.000059990sec.
+Max RSS:         868.
+
+8 connections:
+Info about the process execution from proc:
+Total memory size:       153910.
+Resident set size (RSS): 229.
+Text (code):             4.
+Data + stack:            151887.
+
+Info about the process execution from rusage:
+User CPU time:   0.000000000sec.
+System CPU time: 0.000022996sec.
+Max RSS:         924.
+
+12 connections:
+Info about the process execution from proc:
+Total memory size:       229690.
+Resident set size (RSS): 255.
+Text (code):             4.
+Data + stack:            227667.
+
+Info about the process execution from rusage:
+User CPU time:   0.000013997sec.
+System CPU time: 0.000012998sec.
+Max RSS:         5028.
+
+16 connections:
+Info about the process execution from proc:
+Total memory size:       289086.
+Resident set size (RSS): 268.
+Text (code):             4.
+Data + stack:            287063.
+
+Info about the process execution from rusage:
+User CPU time:   0.000002999sec.
+System CPU time: 0.000046992sec.
+Max RSS:         5080.
+
+20 connections:
+Info about the process execution from proc:
+Total memory size:       266562.
+Resident set size (RSS): 279.
+Text (code):             4.
+Data + stack:            264539.
+
+Info about the process execution from rusage:
+User CPU time:   0.000005999sec.
+System CPU time: 0.000019996sec.
+Max RSS:         5040.
+
+These are the results from the server running on the NeCTAR cloud:
+
+4 connections:
+Info about the process execution from proc:
+Total memory size:       75899.
+Resident set size (RSS): 227.
+Text (code):             4.
+Data + stack:            73817.
+
+Info about the process execution from rusage:
+User CPU time:   0.000008000sec.
+System CPU time: 0.000020000sec.
+Max RSS:         3216.
+
+8 connections:
+Info about the process execution from proc:
+Total memory size:       149631.
+Resident set size (RSS): 219.
+Text (code):             4.
+Data + stack:            147549.
+
+Info about the process execution from rusage:
+User CPU time:   0.000000000sec.
+System CPU time: 0.000012000sec.
+Max RSS:         3216.
+
+12 connections:
+Info about the process execution from proc:
+Total memory size:       157827.
+Resident set size (RSS): 244.
+Text (code):             4.
+Data + stack:            155745.
+
+Info about the process execution from rusage:
+User CPU time:   0.000008000sec.
+System CPU time: 0.000008000sec.
+Max RSS:         5004.
+
+16 connections:
+Info about the process execution from proc:
+Total memory size:       166023.
+Resident set size (RSS): 224.
+Text (code):             4.
+Data + stack:            163941.
+
+Info about the process execution from rusage:
+User CPU time:   0.000004000sec.
+System CPU time: 0.000016000sec.
+Max RSS:         4940.
+
+20 connections:
+Info about the process execution from proc:
+Total memory size:       174219.
+Resident set size (RSS): 225.
+Text (code):             4.
+Data + stack:            172137.
+
+Info about the process execution from rusage:
+User CPU time:   0.000012000sec.
+System CPU time: 0.000012000sec.
+Max RSS:         4944.

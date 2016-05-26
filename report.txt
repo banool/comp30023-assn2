@@ -1,8 +1,7 @@
 There are 3 main sections of the post-execution performance info.
 I will use an example output from an execution to explain these.
 
-The first section is fairly self explanatory, simply containing info about 
-the clients' games.
+The first section is fairly self explanatory:
 
 	Stats about the clients and their games:
 	Num connections: 5.
@@ -19,9 +18,9 @@ to use the appropriate thread id. This data is from /proc/self/statm.
 	Data + stack:            45900.
 
 The total memory size is all the memory that program has. This includes on disk
-or in swap space. The RSS on the other hand is just the memory in physical memory.
-The likely reason that the total memory size is so much bigger than the RSS (both
-in kb) is that many of of the functions from the library that are imported in the
+or in swap space. The RSS on the other hand is just physical memory.
+The likely reason that total memory size is so much bigger than RSS (both kb)
+is that many of of the functions from the library that are imported in the
 #includes aren't actually used in the server program.
 Text (code) is the actual code of the program. This is read only.
 The final field is related to the runtime data of the program. This includes 
@@ -30,7 +29,7 @@ things like memory that has been malloced throughout dynamic execution.
 This final section contains info from getrusage. rusage is, unfortunately,
 fairly limited on linux considering many of the fields aren't maintained.
 However 3 fields were of interest, specifically those holding the time spent
-on the CPU in user mode, the CPU time in kernel mode and the max RSS (resident
+on the CPU in user and kernel mode and the max RSS (resident
 set size) throughout the life of server execution.
 
 	Info about the process execution from rusage:
@@ -38,20 +37,17 @@ set size) throughout the life of server execution.
 	System CPU time: 0.000058991sec.
 	Max RSS:         2860.
 
-User and system CPU time are as the name suggests. User time is generally comprised
+User/system CPU time are as the name suggests. User time is generally comprised
 of calculations (such as comparing two codes) whereas system time is usually spent
 waiting for kernel level commands to finish, such as waiting for file I/O.
 
-Using python with the multiprocessing module I created a script that runs x number
-of clients concurrently. Looking at the server logs, you can see that they are 
-indeed not running serially but at the same time. By starting at 4 connections and
-increasing by 4 each time, digitalis produced the following interesting output:
+By starting at 4 connections and increasing by 4 each time, digitalis produced the
+following interesting output (Text has been omitted because it is the same every time):
 
 4 connections:
 Info about the process execution from proc:
 Total memory size:       78130.
 Resident set size (RSS): 215.
-Text (code):             4.
 Data + stack:            76107.
 
 Info about the process execution from rusage:
@@ -63,7 +59,6 @@ Max RSS:         868.
 Info about the process execution from proc:
 Total memory size:       153910.
 Resident set size (RSS): 229.
-Text (code):             4.
 Data + stack:            151887.
 
 Info about the process execution from rusage:
@@ -75,7 +70,6 @@ Max RSS:         924.
 Info about the process execution from proc:
 Total memory size:       229690.
 Resident set size (RSS): 255.
-Text (code):             4.
 Data + stack:            227667.
 
 Info about the process execution from rusage:
@@ -87,7 +81,6 @@ Max RSS:         5028.
 Info about the process execution from proc:
 Total memory size:       289086.
 Resident set size (RSS): 268.
-Text (code):             4.
 Data + stack:            287063.
 
 Info about the process execution from rusage:
@@ -99,7 +92,6 @@ Max RSS:         5080.
 Info about the process execution from proc:
 Total memory size:       266562.
 Resident set size (RSS): 279.
-Text (code):             4.
 Data + stack:            264539.
 
 Info about the process execution from rusage:
@@ -107,13 +99,12 @@ User CPU time:   0.000005999sec.
 System CPU time: 0.000019996sec.
 Max RSS:         5040.
 
-These are the results from the server running on the NeCTAR cloud:
+These are the same results from the server running on the NeCTAR cloud:
 
 4 connections:
 Info about the process execution from proc:
 Total memory size:       75899.
 Resident set size (RSS): 227.
-Text (code):             4.
 Data + stack:            73817.
 
 Info about the process execution from rusage:
@@ -125,7 +116,6 @@ Max RSS:         3216.
 Info about the process execution from proc:
 Total memory size:       149631.
 Resident set size (RSS): 219.
-Text (code):             4.
 Data + stack:            147549.
 
 Info about the process execution from rusage:
@@ -137,7 +127,6 @@ Max RSS:         3216.
 Info about the process execution from proc:
 Total memory size:       157827.
 Resident set size (RSS): 244.
-Text (code):             4.
 Data + stack:            155745.
 
 Info about the process execution from rusage:
@@ -149,7 +138,6 @@ Max RSS:         5004.
 Info about the process execution from proc:
 Total memory size:       166023.
 Resident set size (RSS): 224.
-Text (code):             4.
 Data + stack:            163941.
 
 Info about the process execution from rusage:
@@ -161,10 +149,36 @@ Max RSS:         4940.
 Info about the process execution from proc:
 Total memory size:       174219.
 Resident set size (RSS): 225.
-Text (code):             4.
 Data + stack:            172137.
 
 Info about the process execution from rusage:
 User CPU time:   0.000012000sec.
 System CPU time: 0.000012000sec.
 Max RSS:         4944.
+
+Things worthy of note here include:
+- On digitalis, total memory size seems to grow mostly progressively
+  whereas on NeCTAR the total memory size jumps rapidly from 4 to 8
+  connections and then plateaus. This could be due to a more aggressive
+  memory allocation algorithm in the OS.
+- On NeCTAR, the max RSS starts out much higher than on digitalis.
+  While they end at around the same size, the much larger start could
+  be due to memory allocation at the OS level which tries to be more
+  accomodating initially, instead of growing as needed.
+- Considering the fickle nature of rusage, there doesn't appear to be
+  any real trend within each computer's set of data. However, it is worthy
+  of note that the numbers produced for CPU time on NeCTAR seem to be a lot
+  more consistent, with no very small decimal places. This could just be
+  rounding on behalf of the OS however and is unlikely to mean any real
+  different in CPU usage.
+- The data + stack seems to be much smaller at higher client loads on 
+  the NeCTAR cloud. The smaller stack could indicate that the NeCTAR
+  cloud is processing the stack more quickly, signifying that the
+  machine has a more powerful processor.
+
+Excluding results, words: 499
+
+P.S. The testing program was made using python with the multiprocessing 
+module. I created a script that runs x number of clients concurrently 
+with the same input guesses each time. Looking at the server logs, you can 
+see that they are indeed not running serially but at the same time.

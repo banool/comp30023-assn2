@@ -7,7 +7,7 @@ from sys import argv
 # the same time. It has been verified in the logs that they are not
 # running serially.
 
-address = "localhost"
+address = "mastermind.danielporteous.xyz"
 port = argv[2]
 inp = "test_input.txt"
 

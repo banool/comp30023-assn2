@@ -10,7 +10,7 @@ from sys import argv
 # Running this on the same machine as the server seems to crash the server.
 # Something about resource stealing or forking or whatnot.
 
-address = "mastermind.danielporteous.xyz"
+address = "digitalis.eng.unimelb.edu.au"
 port = argv[2]
 inp = "test_input.txt"
 

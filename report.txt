@@ -45,56 +45,46 @@ By starting at 4 connections and increasing by 4 each time, digitalis produced t
 following interesting output (Text has been omitted because it is the same every time):
 
 4 connections:
-Info about the process execution from proc:
 Total memory size:       78130.
 Resident set size (RSS): 215.
 Data + stack:            76107.
 
-Info about the process execution from rusage:
 User CPU time:   0.000000000sec.
 System CPU time: 0.000059990sec.
 Max RSS:         868.
 
 8 connections:
-Info about the process execution from proc:
 Total memory size:       153910.
 Resident set size (RSS): 229.
 Data + stack:            151887.
 
-Info about the process execution from rusage:
 User CPU time:   0.000000000sec.
 System CPU time: 0.000022996sec.
 Max RSS:         924.
 
 12 connections:
-Info about the process execution from proc:
 Total memory size:       229690.
 Resident set size (RSS): 255.
 Data + stack:            227667.
 
-Info about the process execution from rusage:
 User CPU time:   0.000013997sec.
 System CPU time: 0.000012998sec.
 Max RSS:         5028.
 
 16 connections:
-Info about the process execution from proc:
 Total memory size:       289086.
 Resident set size (RSS): 268.
 Data + stack:            287063.
 
-Info about the process execution from rusage:
 User CPU time:   0.000002999sec.
 System CPU time: 0.000046992sec.
 Max RSS:         5080.
 
 20 connections:
-Info about the process execution from proc:
 Total memory size:       266562.
 Resident set size (RSS): 279.
 Data + stack:            264539.
 
-Info about the process execution from rusage:
 User CPU time:   0.000005999sec.
 System CPU time: 0.000019996sec.
 Max RSS:         5040.
@@ -102,56 +92,46 @@ Max RSS:         5040.
 These are the same results from the server running on the NeCTAR cloud:
 
 4 connections:
-Info about the process execution from proc:
 Total memory size:       75899.
 Resident set size (RSS): 227.
 Data + stack:            73817.
 
-Info about the process execution from rusage:
 User CPU time:   0.000008000sec.
 System CPU time: 0.000020000sec.
 Max RSS:         3216.
 
 8 connections:
-Info about the process execution from proc:
 Total memory size:       149631.
 Resident set size (RSS): 219.
 Data + stack:            147549.
 
-Info about the process execution from rusage:
 User CPU time:   0.000000000sec.
 System CPU time: 0.000012000sec.
 Max RSS:         3216.
 
 12 connections:
-Info about the process execution from proc:
 Total memory size:       157827.
 Resident set size (RSS): 244.
 Data + stack:            155745.
 
-Info about the process execution from rusage:
 User CPU time:   0.000008000sec.
 System CPU time: 0.000008000sec.
 Max RSS:         5004.
 
 16 connections:
-Info about the process execution from proc:
 Total memory size:       166023.
 Resident set size (RSS): 224.
 Data + stack:            163941.
 
-Info about the process execution from rusage:
 User CPU time:   0.000004000sec.
 System CPU time: 0.000016000sec.
 Max RSS:         4940.
 
 20 connections:
-Info about the process execution from proc:
 Total memory size:       174219.
 Resident set size (RSS): 225.
 Data + stack:            172137.
 
-Info about the process execution from rusage:
 User CPU time:   0.000012000sec.
 System CPU time: 0.000012000sec.
 Max RSS:         4944.
@@ -174,9 +154,30 @@ Things worthy of note here include:
 - The data + stack seems to be much smaller at higher client loads on 
   the NeCTAR cloud. The smaller stack could indicate that the NeCTAR
   cloud is processing the stack more quickly, signifying that the
-  machine has a more powerful processor.
+  machine has a more powerful processor (and is only handling my server).
 
-Excluding results, words: 499
+
+Finally we see some stats for a huge number of connections on digitalis:
+
+Stats about the clients and their games:
+Num connections: 536.
+Num wins: 18.
+
+Info about the process execution from proc:
+Total memory size:       1620872.
+Resident set size (RSS): 1587.
+Text (code):             4.
+Data + stack:            1618849.
+
+Info about the process execution from rusage:
+User CPU time:   0.000099984sec.
+System CPU time: 0.000526919sec.
+Max RSS:         7268.
+
+Which seems to follow the same growth trends. Note that CPU time is still small
+because, even with lots of clients, computation is not very complex.
+
+Excluding results, words: 499.
 
 P.S. The testing program was made using python with the multiprocessing 
 module. I created a script that runs x number of clients concurrently 

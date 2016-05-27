@@ -39,6 +39,14 @@ int create_game(int sock_id, char *ip4, char *correct, StateInfo *state_info) {
         new_game->code = correct;
     }
 
+    // Write initial information to log upon client connection.
+    char log_buf[LOG_MSG_LEN];
+    sprintf(log_buf, "(%s)(%d) Client connected.\n", ip4, sock_id);
+    write_log(log_buf);
+
+    sprintf(log_buf, "(0.0.0.0) Server secret = \"%s\".\n", new_game->code);
+    write_log(log_buf);
+
     // Create the new thread and pass in the StateInfo.
     // We will relocate the appropriate instance inside the thread.
     pthread_create(&new_game->t, NULL, run_instance, state_info);
@@ -71,9 +79,6 @@ void *run_instance(void *param)
     char *ip4 = instance->ip4;
 
     char log_buf[LOG_MSG_LEN];
-
-    sprintf(log_buf, "(0.0.0.0) Server secret = \"%s\".\n", correct);
-    write_log(log_buf);
 
     send_welcome(sock_id);
 

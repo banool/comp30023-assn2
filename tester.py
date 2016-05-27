@@ -7,6 +7,9 @@ from sys import argv
 # the same time. It has been verified in the logs that they are not
 # running serially.
 
+# Running this on the same machine as the server seems to crash the server.
+# Something about resource stealing or forking or whatnot.
+
 address = "mastermind.danielporteous.xyz"
 port = argv[2]
 inp = "test_input.txt"

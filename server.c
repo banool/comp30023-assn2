@@ -25,7 +25,7 @@
 #include "game.h"
 #include "logging.h"
 
-#define LISTEN_QUEUE 10
+#define LISTEN_QUEUE 5
 #define POLL_INTERVAL 250 // Check for new connections 4 times a second.
 
 void interrupt_handler(int dummy);
@@ -205,8 +205,6 @@ int main (int argc, char *argv[])
 Connection from %s rejected.\n", MAX_PLAYERS, ip4);
 	                write_log(log_buf);
 	            } else {
-	                sprintf(log_buf, "(%s)(%d) Client connected.\n", ip4,new_s);
-	                write_log(log_buf);
 	                num_connections += 1;
 	            }
 	            memset(ip4, '\0', INET_ADDRSTRLEN);

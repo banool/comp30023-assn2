@@ -1,11 +1,4 @@
-Things I need:
+Final Result: 14.5/15
 
-- Individual instance of a game in a thread
-- A way of keeping track of all threads (cyclical array of structs? 
-but global incrementing thread number?)
-- a way of instantiating threads 
-- a way of binding threads to sockets
-
-threads may not always match to the socket number.
-for example, you could have multiple clients from the same IP.
-This probably means you need one socket for the multiple threads.
+The 0.5 lost was because I didn't flush to buffer after writing to each line of the log.
+I have since done so by adding the line `fflush(log_f);` in logging.c, which fixed it. 

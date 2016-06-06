@@ -21,6 +21,7 @@ void write_log(char *inp) {
     strftime(curr_time, LOG_TIME_LEN, "%d %m %Y %H:%M:%S", tm_info);
 
 	fprintf(log_f, "[%s] %s", curr_time, inp);
+        fflush(log_f);
 
     memset(inp, '\0', LOG_MSG_LEN);
     pthread_mutex_unlock(&lock);

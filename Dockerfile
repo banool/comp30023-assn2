@@ -1,0 +1,6 @@
+FROM gcc:10
+WORKDIR /container
+COPY . .
+RUN make
+EXPOSE 12340
+ENTRYPOINT ./server 12340
